@@ -20,7 +20,7 @@ interface Delivery {
 
 interface DeliveryPrintProps {
   delivery: Delivery
-  onBack: () => void
+  onBack?: () => void
 }
 
 export function DeliveryPrint({ delivery, onBack }: DeliveryPrintProps) {
@@ -99,10 +99,12 @@ export function DeliveryPrint({ delivery, onBack }: DeliveryPrintProps) {
       <div className="min-h-screen bg-background p-4">
         <div className="mx-auto max-w-4xl">
           <div className="no-print mb-6 flex gap-3">
-            <Button variant="outline" onClick={onBack}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Form
-            </Button>
+            {onBack && (
+              <Button variant="outline" onClick={onBack}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Form
+              </Button>
+            )}
             <Button id="print-btn" onClick={handlePrint}>
               <Printer className="mr-2 h-4 w-4" />
               Print Label

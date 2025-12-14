@@ -1,8 +1,5 @@
-"use client"
-
 import { getDeliveriesByIds } from "@/app/actions"
-import { DeliveryPrint } from "@/components/delivery-print"
-import { PrintButton } from "@/components/print-button"
+import { BulkPrintClient } from "@/components/bulk-print-client"
 
 export default async function BulkPrintPage({
   searchParams,
@@ -22,47 +19,5 @@ export default async function BulkPrintPage({
 
   const deliveries = await getDeliveriesByIds(ids)
 
-  return (
-    <>
-      <style jsx global>{`
-        @media print {
-          @page {
-            size: A4;
-            margin: 10mm;
-          }
-          body * {
-            visibility: hidden;
-          }
-          #print-area,
-          #print-area * {
-            visibility: visible;
-          }
-          #print-area {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-          }
-          .no-print {
-            display: none !important;
-          }
-          .page-break {
-            page-break-after: always;
-          }
-        }
-      `}</style>
-
-      <div className="min-h-screen bg-background p-4">
-        <PrintButton count={deliveries.length} />
-
-        <div id="print-area" className="space-y-8">
-          {deliveries.map((delivery, index) => (
-            <div key={delivery.id} className={index < deliveries.length - 1 ? "page-break" : ""}>
-              <DeliveryPrint delivery={delivery} />
-            </div>
-          ))}
-        </div>
-      </div>
-    </>
-  )
+  return <BulkPrintClient deliveries={deliveries} />
 }
