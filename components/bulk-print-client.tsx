@@ -30,7 +30,8 @@ export function BulkPrintClient({ deliveries }: { deliveries: Delivery[] }) {
 
   return (
     <>
-      <style jsx global>{`
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @media print {
           @page {
             size: A4;
@@ -52,7 +53,7 @@ export function BulkPrintClient({ deliveries }: { deliveries: Delivery[] }) {
             break-inside: avoid;
           }
         }
-      `}</style>
+      `}} />
 
       <div className="min-h-screen bg-background p-4">
         <PrintButton count={deliveries.length} />

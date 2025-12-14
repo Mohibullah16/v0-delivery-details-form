@@ -71,7 +71,8 @@ export function DeliveryPrint({ delivery, onBack }: DeliveryPrintProps) {
 
   return (
     <>
-      <style jsx global>{`
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @media print {
           @page {
             size: A4;
@@ -94,7 +95,7 @@ export function DeliveryPrint({ delivery, onBack }: DeliveryPrintProps) {
             display: none !important;
           }
         }
-      `}</style>
+      `}} />
 
       <div className="min-h-screen bg-background p-4">
         <div className="mx-auto max-w-4xl">
