@@ -69,15 +69,21 @@ export default function DeliveryForm() {
     })
   }
 
-  if (showPrint) {
-    return (
-      <DeliveryPrint
-        sender={SENDER_DETAILS}
-        recipient={recipientDetails}
-        deliveryId={deliveryId}
-        onBack={handleReset}
-      />
-    )
+  if (showPrint && deliveryId) {
+    const delivery = {
+      id: deliveryId,
+      recipient_name: recipientDetails.name,
+      recipient_phone: recipientDetails.phone,
+      recipient_address: recipientDetails.address,
+      recipient_city: recipientDetails.city,
+      cod_amount: recipientDetails.codAmount || null,
+      sender_name: SENDER_DETAILS.name,
+      sender_phone: SENDER_DETAILS.phone,
+      sender_cnic: SENDER_DETAILS.cnic,
+      sender_address: SENDER_DETAILS.address,
+    }
+
+    return <DeliveryPrint delivery={delivery} onBack={handleReset} />
   }
 
   return (
