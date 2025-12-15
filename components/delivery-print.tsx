@@ -127,25 +127,25 @@ export function DeliveryPrint({ delivery, onBack }: DeliveryPrintProps) {
 
             {/* Recipient Section - Large */}
             <div className="mb-6">
-              <h2 className="mb-4 text-2xl font-black uppercase tracking-wide text-black">Deliver To:</h2>
+              <h2 className="mb-4 text-3xl font-black uppercase tracking-wide text-black">Deliver To:</h2>
               <div className="space-y-3">
                 <div>
-                  <p className="text-sm font-black text-black mb-1">NAME</p>
-                  <p className="text-5xl font-black leading-tight text-black">{delivery.recipient_name}</p>
+                  <p className="text-lg font-black text-black mb-2">NAME</p>
+                  <p className="text-7xl font-black leading-tight text-black">{delivery.recipient_name}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm font-black text-black mb-1">PHONE</p>
-                    <p className="text-3xl font-black text-black">{delivery.recipient_phone}</p>
+                    <p className="text-lg font-black text-black mb-2">PHONE</p>
+                    <p className="text-5xl font-black text-black">{delivery.recipient_phone}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-black text-black mb-1">CITY</p>
-                    <p className="text-3xl font-black text-black">{delivery.recipient_city}</p>
+                    <p className="text-lg font-black text-black mb-2">CITY</p>
+                    <p className="text-5xl font-black text-black">{delivery.recipient_city}</p>
                   </div>
                 </div>
                 <div>
-                  <p className="text-sm font-black text-black mb-1">ADDRESS</p>
-                  <p className="text-2xl font-bold leading-snug text-black">{delivery.recipient_address}</p>
+                  <p className="text-lg font-black text-black mb-2">ADDRESS</p>
+                  <p className="text-3xl font-black leading-snug text-black">{delivery.recipient_address}</p>
                 </div>
               </div>
             </div>
@@ -153,15 +153,15 @@ export function DeliveryPrint({ delivery, onBack }: DeliveryPrintProps) {
             {/* COD Amount - Huge (if present) */}
             {delivery.cod_amount && (
               <div className="mb-6 rounded-lg border-4 border-black bg-yellow-50 p-4 text-center">
-                <p className="text-lg font-black uppercase tracking-wider text-black">Cash on Delivery</p>
-                <p className="text-5xl font-black tracking-tight text-black">Rs. {delivery.cod_amount}</p>
+                <p className="text-xl font-black uppercase tracking-wider text-black">Cash on Delivery</p>
+                <p className="text-7xl font-black tracking-tight text-black">Rs. {delivery.cod_amount}</p>
               </div>
             )}
 
             {/* Sender Section - Compact */}
             <div className="rounded border-2 border-black bg-gray-100 p-3">
-              <h3 className="mb-3 text-base font-black uppercase text-black">From (Sender):</h3>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+              <h3 className="mb-3 text-lg font-black uppercase text-black">From (Sender):</h3>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-base">
                 <div>
                   <span className="font-black text-black">Name: </span>
                   <span className="font-bold text-black">{delivery.sender_name}</span>

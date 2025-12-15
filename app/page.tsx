@@ -100,24 +100,29 @@ export default function DeliveryForm() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl">Delivery Details Form</CardTitle>
-            <CardDescription>Enter recipient information for delivery</CardDescription>
+            <CardTitle className="text-3xl font-black">Delivery Details Form</CardTitle>
+            <CardDescription className="text-lg">Enter recipient information for delivery</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Recipient Name *</Label>
+                <Label htmlFor="name" className="text-lg font-bold">
+                  Recipient Name *
+                </Label>
                 <Input
                   id="name"
                   required
                   value={recipientDetails.name}
                   onChange={(e) => setRecipientDetails({ ...recipientDetails, name: e.target.value })}
                   placeholder="Enter recipient name"
+                  className="h-12 text-lg"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number *</Label>
+                <Label htmlFor="phone" className="text-lg font-bold">
+                  Phone Number *
+                </Label>
                 <Input
                   id="phone"
                   type="tel"
@@ -125,43 +130,53 @@ export default function DeliveryForm() {
                   value={recipientDetails.phone}
                   onChange={(e) => setRecipientDetails({ ...recipientDetails, phone: e.target.value })}
                   placeholder="Enter phone number"
+                  className="h-12 text-lg"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="address">Address *</Label>
+                <Label htmlFor="address" className="text-lg font-bold">
+                  Address *
+                </Label>
                 <Input
                   id="address"
                   required
                   value={recipientDetails.address}
                   onChange={(e) => setRecipientDetails({ ...recipientDetails, address: e.target.value })}
                   placeholder="Enter complete address"
+                  className="h-12 text-lg"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="city">City *</Label>
+                <Label htmlFor="city" className="text-lg font-bold">
+                  City *
+                </Label>
                 <Input
                   id="city"
                   required
                   value={recipientDetails.city}
                   onChange={(e) => setRecipientDetails({ ...recipientDetails, city: e.target.value })}
                   placeholder="Enter city"
+                  className="h-12 text-lg"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="codAmount">COD Amount (Optional)</Label>
+                <Label htmlFor="codAmount" className="text-lg font-bold">
+                  COD Amount (Optional)
+                </Label>
                 <Input
                   id="codAmount"
                   type="number"
                   value={recipientDetails.codAmount}
                   onChange={(e) => setRecipientDetails({ ...recipientDetails, codAmount: e.target.value })}
                   placeholder="Enter COD amount if applicable"
+                  className="h-12 text-lg"
                 />
               </div>
 
-              <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
+              <Button type="submit" className="w-full h-14 text-lg font-bold" disabled={isSubmitting}>
                 {isSubmitting ? "Creating Label..." : "Generate Delivery Label"}
               </Button>
             </form>
