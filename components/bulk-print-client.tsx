@@ -35,7 +35,7 @@ export function BulkPrintClient({ deliveries }: { deliveries: Delivery[] }) {
         @media print {
           @page {
             size: A4;
-            margin: 10mm;
+            margin: 8mm;
           }
           
           .no-print {

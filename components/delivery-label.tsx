@@ -23,8 +23,8 @@ export function DeliveryLabel({ delivery }: { delivery: Delivery }) {
         if (!qrCodeRef.current || !delivery.id) return
 
         const qrCode = new QRCodeStyling({
-            width: 150,
-            height: 150,
+            width: 200,
+            height: 200,
             data: `${window.location.origin}/delivery/${delivery.id}`,
             margin: 0,
             qrOptions: {
@@ -59,68 +59,68 @@ export function DeliveryLabel({ delivery }: { delivery: Delivery }) {
     }, [delivery.id])
 
     return (
-        <div className="rounded-lg border-2 border-border bg-white p-6 text-black">
+        <div className="rounded-lg border-2 border-border bg-white p-3 text-black">
             {/* Header with QR Code */}
-            <div className="mb-6 flex items-start justify-between border-b-2 border-black pb-4">
+            <div className="mb-3 flex items-start justify-between border-b-2 border-black pb-2">
                 <div className="flex-1">
-                    <h1 className="text-2xl font-bold uppercase tracking-wide">Delivery Label</h1>
-                    <p className="text-xs text-gray-600 mt-1">ID: {delivery.id.slice(0, 8)}</p>
+                    <h1 className="text-4xl font-black uppercase tracking-wide">Delivery Label</h1>
+                    <p className="text-base font-bold text-black mt-1">ID: {delivery.id.slice(0, 8)}</p>
                 </div>
                 <div ref={qrCodeRef} className="flex-shrink-0" />
             </div>
 
             {/* Recipient Section - Large */}
-            <div className="mb-6">
-                <h2 className="mb-3 text-xl font-bold uppercase tracking-wide text-gray-700">Deliver To:</h2>
+            <div className="mb-3">
+                <h2 className="mb-2 text-3xl font-black uppercase tracking-wide text-black">Deliver To:</h2>
                 <div className="space-y-2">
                     <div>
-                        <p className="text-xs font-semibold text-gray-600">Name</p>
-                        <p className="text-3xl font-bold leading-tight">{delivery.recipient_name}</p>
+                        <p className="text-base font-black text-black mb-1">NAME</p>
+                        <p className="text-3xl font-black leading-tight text-black">{delivery.recipient_name}</p>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-2">
                         <div>
-                            <p className="text-xs font-semibold text-gray-600">Phone</p>
-                            <p className="text-2xl font-semibold">{delivery.recipient_phone}</p>
+                            <p className="text-base font-black text-black mb-1">PHONE</p>
+                            <p className="text-3xl font-black text-black">{delivery.recipient_phone}</p>
                         </div>
                         <div>
-                            <p className="text-xs font-semibold text-gray-600">City</p>
-                            <p className="text-2xl font-semibold">{delivery.recipient_city}</p>
+                            <p className="text-base font-black text-black mb-1">CITY</p>
+                            <p className="text-3xl font-black text-black">{delivery.recipient_city}</p>
                         </div>
                     </div>
                     <div>
-                        <p className="text-xs font-semibold text-gray-600">Address</p>
-                        <p className="text-xl font-medium leading-snug">{delivery.recipient_address}</p>
+                        <p className="text-base font-black text-black mb-1">ADDRESS</p>
+                        <p className="text-3xl font-black leading-snug text-black">{delivery.recipient_address}</p>
                     </div>
                 </div>
             </div>
 
             {/* COD Amount - Huge (if present) */}
             {delivery.cod_amount && (
-                <div className="mb-6 rounded-lg border-4 border-black bg-yellow-50 p-4 text-center">
-                    <p className="text-lg font-bold uppercase tracking-wider text-gray-700">Cash on Delivery</p>
-                    <p className="text-5xl font-black tracking-tight">Rs. {delivery.cod_amount}</p>
+                <div className="mb-3 rounded-lg border-2 border-black bg-yellow-50 p-3 text-center">
+                    <p className="text-lg font-black uppercase tracking-wider text-black">Cash on Delivery</p>
+                    <p className="text-5xl font-black tracking-tight text-black">Rs. {delivery.cod_amount}</p>
                 </div>
             )}
 
             {/* Sender Section - Compact */}
-            <div className="rounded border border-gray-300 bg-gray-50 p-4">
-                <h3 className="mb-2 text-sm font-bold uppercase text-gray-700">From:</h3>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+            <div className="rounded border-2 border-black bg-gray-100 p-3">
+                <h3 className="mb-2 text-xl font-black uppercase text-black">From (Sender):</h3>
+                <div className="space-y-1 text-lg">
                     <div>
-                        <span className="font-semibold text-gray-600">Name: </span>
-                        <span className="font-medium">{delivery.sender_name}</span>
+                        <span className="font-black text-black">Name: </span>
+                        <span className="font-black text-black">{delivery.sender_name}</span>
                     </div>
                     <div>
-                        <span className="font-semibold text-gray-600">Phone: </span>
-                        <span className="font-medium">{delivery.sender_phone}</span>
+                        <span className="font-black text-black">Phone: </span>
+                        <span className="font-black text-black">{delivery.sender_phone}</span>
                     </div>
-                    <div className="col-span-2">
-                        <span className="font-semibold text-gray-600">CNIC: </span>
-                        <span className="font-medium">{delivery.sender_cnic}</span>
+                    <div>
+                        <span className="font-black text-black">CNIC: </span>
+                        <span className="font-black text-black">{delivery.sender_cnic}</span>
                     </div>
-                    <div className="col-span-2">
-                        <span className="font-semibold text-gray-600">Address: </span>
-                        <span className="font-medium">{delivery.sender_address}</span>
+                    <div>
+                        <span className="font-black text-black">Address: </span>
+                        <span className="font-black text-black">{delivery.sender_address}</span>
                     </div>
                 </div>
             </div>
