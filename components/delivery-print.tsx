@@ -160,23 +160,23 @@ export function DeliveryPrint({ delivery, onBack }: DeliveryPrintProps) {
 
             {/* Sender Section - Compact */}
             <div className="rounded border-2 border-black bg-gray-100 p-3">
-              <h3 className="mb-3 text-lg font-black uppercase text-black">From (Sender):</h3>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-base">
+              <h3 className="mb-3 text-3xl font-black uppercase text-black">From (Sender):</h3>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-2xl">
                 <div>
                   <span className="font-black text-black">Name: </span>
-                  <span className="font-bold text-black">{delivery.sender_name}</span>
+                  <span className="font-black text-black">{delivery.sender_name}</span>
                 </div>
                 <div>
                   <span className="font-black text-black">Phone: </span>
-                  <span className="font-bold text-black">{delivery.sender_phone}</span>
+                  <span className="font-black text-black">{delivery.sender_phone}</span>
                 </div>
                 <div className="col-span-2">
                   <span className="font-black text-black">CNIC: </span>
-                  <span className="font-bold text-black">{delivery.sender_cnic}</span>
+                  <span className="font-black text-black">{delivery.sender_cnic}</span>
                 </div>
                 <div className="col-span-2">
                   <span className="font-black text-black">Address: </span>
-                  <span className="font-bold text-black">{delivery.sender_address}</span>
+                  <span className="font-black text-black">{delivery.sender_address}</span>
                 </div>
               </div>
             </div>
