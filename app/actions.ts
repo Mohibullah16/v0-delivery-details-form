@@ -65,7 +65,9 @@ export async function getAllDeliveries() {
 
     const queryPromise = supabase
       .from("deliveries")
-      .select("id, recipient_name, recipient_phone, recipient_city, cod_amount, status, created_at, tracking_number")
+      .select(
+        "id, recipient_name, recipient_phone, recipient_city, cod_amount, status, created_at, tracking_number, items",
+      )
       .order("created_at", { ascending: false })
       .limit(500)
 
@@ -79,7 +81,6 @@ export async function getAllDeliveries() {
     return data || []
   } catch (error) {
     console.error("[v0] Error in getAllDeliveries:", error)
-    // Return empty array on timeout instead of throwing
     return []
   }
 }
@@ -134,6 +135,35 @@ export async function updateTrackingNumber(id: string, trackingNumber: string) {
   if (error) {
     console.error("[v0] Error updating tracking number:", error)
     throw new Error("Failed to update tracking number")
+  }
+
+  return { success: true }
+}
+
+export async function updateItems(id: string, items: string) {
+  const supabase = await createClient()
+
+  const { error } = await supabase.from("deliveries").update({ items }).eq("id", id)
+
+  if (error) {
+    console.error("[v0] Error updating items:", error)
+    throw new Error("Failed to update items")
+  }
+
+  return { success: true }
+}
+
+export async function updateDelivery(id: string, field: string, value: string) {
+  const supabase = await createClient()
+
+  const { error } = await supabase
+    .from("deliveries")
+    .update({ [field]: value })
+    .eq("id", id)
+
+  if (error) {
+    console.error("[v0] Error updating delivery:", error)
+    throw new Error(`Failed to update ${field}`)
   }
 
   return { success: true }
