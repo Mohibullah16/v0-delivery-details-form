@@ -19,19 +19,27 @@ interface Delivery {
 
 export function BulkPrintClient({ deliveries }: { deliveries: Delivery[] }) {
   useEffect(() => {
-    // Wait for content to fully render before triggering print
     const timer = setTimeout(() => {
-      console.log("Triggering print dialog...")
+      console.log("[v0] Triggering print dialog for", deliveries.length, "deliveries")
       window.print()
-    }, 1500) // 1.5 second delay to ensure QR codes are fully rendered
+    }, 500)
 
     return () => clearTimeout(timer)
-  }, [])
+  }, [deliveries.length])
+
+  if (deliveries.length === 0) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p className="text-muted-foreground">Failed to load deliveries for printing</p>
+      </div>
+    )
+  }
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{
-        __html: `
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
         @media print {
           @page {
             size: A4;
@@ -53,7 +61,9 @@ export function BulkPrintClient({ deliveries }: { deliveries: Delivery[] }) {
             break-inside: avoid;
           }
         }
-      `}} />
+      `,
+        }}
+      />
 
       <div className="min-h-screen bg-background p-4">
         <PrintButton count={deliveries.length} />

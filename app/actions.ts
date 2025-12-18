@@ -121,14 +121,31 @@ export async function updateDeliveryStatus(id: string, status: string) {
 export async function getDeliveriesByIds(ids: string[]) {
   const supabase = await createClient()
 
-  const { data, error } = await supabase.from("deliveries").select("*").in("id", ids)
+  try {
+    const queryPromise = (async () => {
+      const { data, error } = await supabase
+        .from("deliveries")
+        .select("*")
+        .in("id", ids)
+        .order("created_at", { ascending: false })
 
-  if (error) {
-    console.error("[v0] Error fetching deliveries:", error)
-    throw new Error("Failed to fetch deliveries")
+      if (error) {
+        throw new Error("Failed to fetch deliveries")
+      }
+
+      return data || []
+    })()
+
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Query timeout")), 10000),
+    )
+
+    const deliveries = await Promise.race([queryPromise, timeoutPromise])
+    return deliveries
+  } catch (error) {
+    console.error("[v0] Error fetching deliveries by ids:", error)
+    return []
   }
-
-  return data
 }
 
 export async function updateTrackingNumber(id: string, trackingNumber: string) {
