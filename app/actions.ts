@@ -61,24 +61,28 @@ export async function getAllDeliveries() {
   const supabase = await createClient()
 
   try {
-    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Query timeout")), 30000))
+    const queryPromise = (async () => {
+      const { data, error } = await supabase
+        .from("deliveries")
+        .select(
+          "id, recipient_name, recipient_phone, recipient_city, cod_amount, status, created_at, tracking_number, items",
+        )
+        .order("created_at", { ascending: false })
+        .limit(500)
 
-    const queryPromise = supabase
-      .from("deliveries")
-      .select(
-        "id, recipient_name, recipient_phone, recipient_city, cod_amount, status, created_at, tracking_number, items",
-      )
-      .order("created_at", { ascending: false })
-      .limit(500)
+      if (error) {
+        throw new Error("Failed to fetch deliveries")
+      }
 
-    const { data, error } = (await Promise.race([queryPromise, timeoutPromise])) as any
+      return data || []
+    })()
 
-    if (error) {
-      console.error("[v0] Error fetching deliveries:", error)
-      throw new Error("Failed to fetch deliveries")
-    }
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Query timeout - taking too long")), 15000),
+    )
 
-    return data || []
+    const deliveries = await Promise.race([queryPromise, timeoutPromise])
+    return deliveries
   } catch (error) {
     console.error("[v0] Error in getAllDeliveries:", error)
     return []
