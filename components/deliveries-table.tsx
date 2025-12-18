@@ -74,6 +74,17 @@ export function DeliveriesTable({ deliveries }: { deliveries: Delivery[] }) {
       alert("Please select at least one delivery to print")
       return
     }
+
+    // Warn if selecting too many deliveries
+    if (selectedIds.length > 50) {
+      const confirmed = confirm(
+        `You are about to print ${selectedIds.length} delivery labels. This may take some time and could slow down your browser.\n\nFor best performance, consider printing in smaller batches (50 or fewer at a time).\n\nDo you want to continue?`
+      )
+      if (!confirmed) {
+        return
+      }
+    }
+
     const printUrl = `/delivery/print?ids=${selectedIds.join(",")}`
     window.open(printUrl, "_blank")
   }

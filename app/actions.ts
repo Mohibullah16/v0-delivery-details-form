@@ -122,25 +122,48 @@ export async function getDeliveriesByIds(ids: string[]) {
   const supabase = await createClient()
 
   try {
-    const queryPromise = (async () => {
-      const { data, error } = await supabase
-        .from("deliveries")
-        .select("*")
-        .in("id", ids)
-        .order("created_at", { ascending: false })
+    console.log(`[v0] Fetching ${ids.length} deliveries for bulk print`)
 
-      if (error) {
-        throw new Error("Failed to fetch deliveries")
+    // Process in batches if there are many IDs to avoid URL/query limits
+    const batchSize = 100
+    const batches = []
+
+    for (let i = 0; i < ids.length; i += batchSize) {
+      batches.push(ids.slice(i, i + batchSize))
+    }
+
+    const queryPromise = (async () => {
+      const allData = []
+
+      for (const batch of batches) {
+        const { data, error } = await supabase
+          .from("deliveries")
+          .select("*")
+          .in("id", batch)
+
+        if (error) {
+          console.error("[v0] Batch fetch error:", error)
+          throw new Error("Failed to fetch deliveries")
+        }
+
+        if (data) {
+          allData.push(...data)
+        }
       }
 
-      return data || []
+      // Sort by created_at after fetching all batches
+      return allData.sort((a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      )
     })()
 
+    // Increased timeout to 30 seconds for large batches
     const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("Query timeout")), 10000),
+      setTimeout(() => reject(new Error("Query timeout - please try selecting fewer deliveries")), 30000),
     )
 
     const deliveries = await Promise.race([queryPromise, timeoutPromise])
+    console.log(`[v0] Successfully fetched ${deliveries.length} deliveries`)
     return deliveries
   } catch (error) {
     console.error("[v0] Error fetching deliveries by ids:", error)
