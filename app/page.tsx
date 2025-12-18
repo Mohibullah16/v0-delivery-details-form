@@ -28,7 +28,7 @@ export default function DeliveryForm() {
     address: "",
     city: "",
     codAmount: "",
-    items: "", // Add items field
+    items: "",
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -42,7 +42,7 @@ export default function DeliveryForm() {
         recipientAddress: recipientDetails.address,
         recipientCity: recipientDetails.city,
         codAmount: recipientDetails.codAmount,
-        items: recipientDetails.items, // Include items
+        items: recipientDetails.items,
         senderName: SENDER_DETAILS.name,
         senderPhone: SENDER_DETAILS.phone,
         senderCnic: SENDER_DETAILS.cnic,
@@ -68,7 +68,7 @@ export default function DeliveryForm() {
       address: "",
       city: "",
       codAmount: "",
-      items: "", // Reset items field
+      items: "",
     })
   }
 
@@ -80,7 +80,7 @@ export default function DeliveryForm() {
       recipient_address: recipientDetails.address,
       recipient_city: recipientDetails.city,
       cod_amount: recipientDetails.codAmount || null,
-      items: recipientDetails.items || null, // Include items in delivery object
+      items: recipientDetails.items || null,
       sender_name: SENDER_DETAILS.name,
       sender_phone: SENDER_DETAILS.phone,
       sender_cnic: SENDER_DETAILS.cnic,
@@ -142,13 +142,22 @@ export default function DeliveryForm() {
                 <Label htmlFor="address" className="text-lg font-bold">
                   Address *
                 </Label>
-                <Input
+                <textarea
                   id="address"
                   required
                   value={recipientDetails.address}
-                  onChange={(e) => setRecipientDetails({ ...recipientDetails, address: e.target.value })}
+                  onChange={(e) => {
+                    setRecipientDetails({ ...recipientDetails, address: e.target.value })
+                    e.target.style.height = "auto"
+                    e.target.style.height = Math.min(e.target.scrollHeight, 200) + "px"
+                  }}
+                  onInput={(e) => {
+                    e.currentTarget.style.height = "auto"
+                    e.currentTarget.style.height = Math.min(e.currentTarget.scrollHeight, 200) + "px"
+                  }}
                   placeholder="Enter complete address"
-                  className="h-12 text-lg"
+                  className="w-full p-3 border rounded-md text-lg min-h-24 resize-none font-sans"
+                  style={{ overflow: "hidden" }}
                 />
               </div>
 

@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useState } from "react"
 import { deleteDelivery, updateDeliveryStatus, updateTrackingNumber, updateItems, updateDelivery } from "@/app/actions"
 import { Button } from "@/components/ui/button"
@@ -35,13 +37,8 @@ export function DeliveriesTable({ deliveries }: { deliveries: Delivery[] }) {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null)
-  const [editingTrackingId, setEditingTrackingId] = useState<string | null>(null)
-  const [trackingInputs, setTrackingInputs] = useState<Record<string, string>>({})
-  const [editingItemsId, setEditingItemsId] = useState<string | null>(null)
-  const [itemsInputs, setItemsInputs] = useState<Record<string, string>>({})
-  const [editingFieldId, setEditingFieldId] = useState<string | null>(null)
-  const [editingField, setEditingField] = useState<string | null>(null)
-  const [fieldInputs, setFieldInputs] = useState<Record<string, string>>({})
+  const [editingCell, setEditingCell] = useState<{ id: string; field: string } | null>(null)
+  const [editValue, setEditValue] = useState<string>("")
   const router = useRouter()
 
   const handleDelete = async (id: string) => {
@@ -93,71 +90,71 @@ export function DeliveriesTable({ deliveries }: { deliveries: Delivery[] }) {
     }
   }
 
-  const handleTrackingEdit = (id: string, currentTracking: string | null) => {
-    setEditingTrackingId(id)
-    setTrackingInputs({ ...trackingInputs, [id]: currentTracking || "" })
+  const startEditing = (id: string, field: string, currentValue: string | null) => {
+    setEditingCell({ id, field })
+    setEditValue(currentValue || "")
   }
 
-  const handleTrackingSave = async (id: string) => {
-    const trackingNumber = trackingInputs[id]
+  const saveEdit = async () => {
+    if (!editingCell) return
+
     try {
-      await updateTrackingNumber(id, trackingNumber)
+      const { id, field } = editingCell
+
+      if (field === "tracking_number") {
+        await updateTrackingNumber(id, editValue)
+      } else if (field === "items") {
+        await updateItems(id, editValue)
+      } else {
+        await updateDelivery(id, field, editValue)
+      }
+
       router.refresh()
-      setEditingTrackingId(null)
+      setEditingCell(null)
+      setEditValue("")
     } catch (error) {
-      alert(`Failed to update tracking number: ${error instanceof Error ? error.message : "Unknown error"}`)
+      alert(`Failed to update: ${error instanceof Error ? error.message : "Unknown error"}`)
     }
   }
 
-  const handleTrackingCancel = () => {
-    setEditingTrackingId(null)
-    setTrackingInputs({})
+  const cancelEdit = () => {
+    setEditingCell(null)
+    setEditValue("")
   }
 
-  const handleItemsEdit = (id: string, currentItems: string | null) => {
-    setEditingItemsId(id)
-    setItemsInputs({ ...itemsInputs, [id]: currentItems || "" })
-  }
-
-  const handleItemsSave = async (id: string) => {
-    const items = itemsInputs[id]
-    try {
-      await updateItems(id, items)
-      router.refresh()
-      setEditingItemsId(null)
-    } catch (error) {
-      alert(`Failed to update items: ${error instanceof Error ? error.message : "Unknown error"}`)
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      saveEdit()
+    } else if (e.key === "Escape") {
+      cancelEdit()
     }
   }
 
-  const handleItemsCancel = () => {
-    setEditingItemsId(null)
-    setItemsInputs({})
-  }
+  const renderEditableCell = (delivery: Delivery, field: string, displayValue: string | React.ReactNode) => {
+    const isEditing = editingCell?.id === delivery.id && editingCell?.field === field
 
-  const handleFieldEdit = (id: string, field: string, currentValue: string | null) => {
-    setEditingFieldId(id)
-    setEditingField(field)
-    setFieldInputs({ ...fieldInputs, [id]: currentValue || "" })
-  }
-
-  const handleFieldSave = async (id: string) => {
-    if (!editingField) return
-    const value = fieldInputs[id]
-    try {
-      await updateDelivery(id, editingField, value)
-      router.refresh()
-      setEditingFieldId(null)
-      setEditingField(null)
-    } catch (error) {
-      alert(`Failed to update field: ${error instanceof Error ? error.message : "Unknown error"}`)
+    if (isEditing) {
+      return (
+        <Input
+          autoFocus
+          value={editValue}
+          onChange={(e) => setEditValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onBlur={saveEdit}
+          className="h-8 text-sm"
+          onClick={(e) => e.stopPropagation()}
+        />
+      )
     }
-  }
 
-  const handleFieldCancel = () => {
-    setEditingFieldId(null)
-    setEditingField(null)
-    setFieldInputs({})
+    return (
+      <div
+        onDoubleClick={() => startEditing(delivery.id, field, editValue || (displayValue as string))}
+        className="cursor-text hover:bg-muted/50 p-1 rounded transition-colors"
+      >
+        {displayValue}
+      </div>
+    )
   }
 
   return (
@@ -179,7 +176,7 @@ export function DeliveriesTable({ deliveries }: { deliveries: Delivery[] }) {
         </div>
       )}
 
-      <div className="rounded-lg border bg-card">
+      <div className="rounded-lg border bg-card overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -189,14 +186,14 @@ export function DeliveriesTable({ deliveries }: { deliveries: Delivery[] }) {
                   onCheckedChange={toggleSelectAll}
                 />
               </TableHead>
-              <TableHead>Recipient Name</TableHead>
+              <TableHead>Name</TableHead>
               <TableHead>Phone</TableHead>
               <TableHead>City</TableHead>
               <TableHead>Items</TableHead>
-              <TableHead>COD Amount</TableHead>
-              <TableHead>Tracking Number</TableHead>
+              <TableHead>COD</TableHead>
+              <TableHead>Tracking</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Created At</TableHead>
+              <TableHead>Created</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -217,192 +214,28 @@ export function DeliveriesTable({ deliveries }: { deliveries: Delivery[] }) {
                     />
                   </TableCell>
                   <TableCell className="font-medium">
-                    {editingFieldId === delivery.id && editingField === "recipient_name" ? (
-                      <div className="flex gap-2">
-                        <Input
-                          value={fieldInputs[delivery.id] || ""}
-                          onChange={(e) => setFieldInputs({ ...fieldInputs, [delivery.id]: e.target.value })}
-                          placeholder="Recipient name"
-                          className="h-8 text-sm"
-                        />
-                        <Button size="sm" onClick={() => handleFieldSave(delivery.id)}>
-                          Save
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={handleFieldCancel}>
-                          Cancel
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <span>{delivery.recipient_name}</span>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleFieldEdit(delivery.id, "recipient_name", delivery.recipient_name)}
-                        >
-                          Edit
-                        </Button>
-                      </div>
+                    {renderEditableCell(delivery, "recipient_name", delivery.recipient_name)}
+                  </TableCell>
+                  <TableCell>{renderEditableCell(delivery, "recipient_phone", delivery.recipient_phone)}</TableCell>
+                  <TableCell>{renderEditableCell(delivery, "recipient_city", delivery.recipient_city)}</TableCell>
+                  <TableCell>{renderEditableCell(delivery, "items", delivery.items || "—")}</TableCell>
+                  <TableCell>
+                    {renderEditableCell(
+                      delivery,
+                      "cod_amount",
+                      delivery.cod_amount ? `Rs. ${delivery.cod_amount}` : "—",
                     )}
                   </TableCell>
                   <TableCell>
-                    {editingFieldId === delivery.id && editingField === "recipient_phone" ? (
-                      <div className="flex gap-2">
-                        <Input
-                          value={fieldInputs[delivery.id] || ""}
-                          onChange={(e) => setFieldInputs({ ...fieldInputs, [delivery.id]: e.target.value })}
-                          placeholder="Phone"
-                          className="h-8 text-sm"
-                        />
-                        <Button size="sm" onClick={() => handleFieldSave(delivery.id)}>
-                          Save
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={handleFieldCancel}>
-                          Cancel
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <span>{delivery.recipient_phone}</span>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleFieldEdit(delivery.id, "recipient_phone", delivery.recipient_phone)}
-                        >
-                          Edit
-                        </Button>
-                      </div>
-                    )}
+                    {renderEditableCell(delivery, "tracking_number", delivery.tracking_number || "—")}
                   </TableCell>
-                  <TableCell>
-                    {editingFieldId === delivery.id && editingField === "recipient_city" ? (
-                      <div className="flex gap-2">
-                        <Input
-                          value={fieldInputs[delivery.id] || ""}
-                          onChange={(e) => setFieldInputs({ ...fieldInputs, [delivery.id]: e.target.value })}
-                          placeholder="City"
-                          className="h-8 text-sm"
-                        />
-                        <Button size="sm" onClick={() => handleFieldSave(delivery.id)}>
-                          Save
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={handleFieldCancel}>
-                          Cancel
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <span>{delivery.recipient_city}</span>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleFieldEdit(delivery.id, "recipient_city", delivery.recipient_city)}
-                        >
-                          Edit
-                        </Button>
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {editingItemsId === delivery.id ? (
-                      <div className="flex gap-2">
-                        <Input
-                          value={itemsInputs[delivery.id] || ""}
-                          onChange={(e) => setItemsInputs({ ...itemsInputs, [delivery.id]: e.target.value })}
-                          placeholder="Items to pack"
-                          className="h-8 text-sm"
-                        />
-                        <Button size="sm" onClick={() => handleItemsSave(delivery.id)}>
-                          Save
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={handleItemsCancel}>
-                          Cancel
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <span className={delivery.items ? "font-mono text-sm" : "text-muted-foreground"}>
-                          {delivery.items || "—"}
-                        </span>
-                        <Button size="sm" variant="ghost" onClick={() => handleItemsEdit(delivery.id, delivery.items)}>
-                          Edit
-                        </Button>
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {editingFieldId === delivery.id && editingField === "cod_amount" ? (
-                      <div className="flex gap-2">
-                        <Input
-                          value={fieldInputs[delivery.id] || ""}
-                          onChange={(e) => setFieldInputs({ ...fieldInputs, [delivery.id]: e.target.value })}
-                          placeholder="COD amount"
-                          className="h-8 text-sm"
-                        />
-                        <Button size="sm" onClick={() => handleFieldSave(delivery.id)}>
-                          Save
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={handleFieldCancel}>
-                          Cancel
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        {delivery.cod_amount ? (
-                          <span className="font-semibold text-green-600">Rs. {delivery.cod_amount}</span>
-                        ) : (
-                          <span className="text-muted-foreground">N/A</span>
-                        )}
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleFieldEdit(delivery.id, "cod_amount", delivery.cod_amount || "")}
-                        >
-                          Edit
-                        </Button>
-                      </div>
-                    )}
-                  </TableCell>
-                  {/* ... existing tracking number ... */}
-                  <TableCell>
-                    {editingTrackingId === delivery.id ? (
-                      <div className="flex gap-2">
-                        <Input
-                          value={trackingInputs[delivery.id] || ""}
-                          onChange={(e) => setTrackingInputs({ ...trackingInputs, [delivery.id]: e.target.value })}
-                          placeholder="Enter tracking number"
-                          className="h-8 text-sm"
-                        />
-                        <Button size="sm" onClick={() => handleTrackingSave(delivery.id)}>
-                          Save
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={handleTrackingCancel}>
-                          Cancel
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <span className={delivery.tracking_number ? "font-mono text-sm" : "text-muted-foreground"}>
-                          {delivery.tracking_number || "—"}
-                        </span>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleTrackingEdit(delivery.id, delivery.tracking_number)}
-                        >
-                          Edit
-                        </Button>
-                      </div>
-                    )}
-                  </TableCell>
-                  {/* ... existing status ... */}
                   <TableCell>
                     <Select
                       value={delivery.status}
                       onValueChange={(value) => handleStatusUpdate(delivery.id, value)}
                       disabled={updatingStatusId === delivery.id}
                     >
-                      <SelectTrigger className="w-40">
+                      <SelectTrigger className="w-32">
                         <SelectValue>
                           <Badge
                             className={
@@ -421,17 +254,12 @@ export function DeliveriesTable({ deliveries }: { deliveries: Delivery[] }) {
                       </SelectContent>
                     </Select>
                   </TableCell>
-                  {/* ... existing created at ... */}
-                  <TableCell className="text-muted-foreground">
+                  <TableCell className="text-muted-foreground text-sm">
                     {new Date(delivery.created_at).toLocaleDateString("en-US", {
-                      year: "numeric",
                       month: "short",
                       day: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
                     })}
                   </TableCell>
-                  {/* ... existing actions ... */}
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Button variant="outline" size="sm" asChild>
