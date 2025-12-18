@@ -4,7 +4,12 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 
 export default async function DeliveriesPage() {
-  const deliveries = await getAllDeliveries()
+  let deliveries = []
+  try {
+    deliveries = await getAllDeliveries()
+  } catch (error) {
+    console.error("[v0] Failed to load deliveries:", error)
+  }
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -19,7 +24,13 @@ export default async function DeliveriesPage() {
           </Button>
         </div>
 
-        <DeliveriesTable deliveries={deliveries} />
+        {deliveries.length === 0 ? (
+          <div className="rounded-lg border bg-card p-8 text-center text-muted-foreground">
+            <p>No deliveries found or unable to load deliveries. Please try again later.</p>
+          </div>
+        ) : (
+          <DeliveriesTable deliveries={deliveries} />
+        )}
       </div>
     </div>
   )

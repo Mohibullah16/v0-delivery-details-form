@@ -28,6 +28,7 @@ export default function DeliveryForm() {
     address: "",
     city: "",
     codAmount: "",
+    items: "", // Add items field
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -41,6 +42,7 @@ export default function DeliveryForm() {
         recipientAddress: recipientDetails.address,
         recipientCity: recipientDetails.city,
         codAmount: recipientDetails.codAmount,
+        items: recipientDetails.items, // Include items
         senderName: SENDER_DETAILS.name,
         senderPhone: SENDER_DETAILS.phone,
         senderCnic: SENDER_DETAILS.cnic,
@@ -66,6 +68,7 @@ export default function DeliveryForm() {
       address: "",
       city: "",
       codAmount: "",
+      items: "", // Reset items field
     })
   }
 
@@ -77,6 +80,7 @@ export default function DeliveryForm() {
       recipient_address: recipientDetails.address,
       recipient_city: recipientDetails.city,
       cod_amount: recipientDetails.codAmount || null,
+      items: recipientDetails.items || null, // Include items in delivery object
       sender_name: SENDER_DETAILS.name,
       sender_phone: SENDER_DETAILS.phone,
       sender_cnic: SENDER_DETAILS.cnic,
@@ -158,6 +162,19 @@ export default function DeliveryForm() {
                   value={recipientDetails.city}
                   onChange={(e) => setRecipientDetails({ ...recipientDetails, city: e.target.value })}
                   placeholder="Enter city"
+                  className="h-12 text-lg"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="items" className="text-lg font-bold">
+                  Items to Pack (Optional)
+                </Label>
+                <Input
+                  id="items"
+                  value={recipientDetails.items}
+                  onChange={(e) => setRecipientDetails({ ...recipientDetails, items: e.target.value })}
+                  placeholder="e.g., 2x Books, 1x Phone, 1x Charger"
                   className="h-12 text-lg"
                 />
               </div>

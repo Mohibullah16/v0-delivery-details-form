@@ -12,6 +12,7 @@ interface Delivery {
   recipient_address: string
   recipient_city: string
   cod_amount: string | null
+  items?: string | null // Add items field
   sender_name: string
   sender_phone: string
   sender_cnic: string
@@ -116,6 +117,13 @@ export function DeliveryPrint({ delivery, onBack }: DeliveryPrintProps) {
           </div>
 
           <div id="print-content" className="rounded-lg border-2 border-border bg-white p-3 text-black">
+            {delivery.items && (
+              <div className="mb-3 rounded border-2 border-black bg-blue-50 p-3">
+                <p className="text-base font-bold text-black mb-2">ITEMS TO PACK:</p>
+                <p className="text-lg font-bold text-black">{delivery.items}</p>
+              </div>
+            )}
+
             {/* Header with QR Code */}
             <div className="mb-3 flex items-start justify-between border-b-2 border-black pb-2">
               <div className="flex-1">

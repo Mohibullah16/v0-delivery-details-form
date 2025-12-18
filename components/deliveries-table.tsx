@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { deleteDelivery, updateDeliveryStatus } from "@/app/actions"
+import { deleteDelivery, updateDeliveryStatus, updateTrackingNumber } from "@/app/actions"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Trash2, Eye, Printer } from "lucide-react"
@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
 
 interface Delivery {
   id: string
@@ -19,6 +20,7 @@ interface Delivery {
   cod_amount: string | null
   status: string
   created_at: string
+  tracking_number: string | null
 }
 
 const statusConfig = {
@@ -30,8 +32,10 @@ const statusConfig = {
 
 export function DeliveriesTable({ deliveries }: { deliveries: Delivery[] }) {
   const [deletingId, setDeletingId] = useState<string | null>(null)
-  const [selectedIds, setSelectedIds] = useState<string[]>([]) // Track selected deliveries
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null)
+  const [editingTrackingId, setEditingTrackingId] = useState<string | null>(null)
+  const [trackingInputs, setTrackingInputs] = useState<Record<string, string>>({})
   const router = useRouter()
 
   const handleDelete = async (id: string) => {
@@ -67,7 +71,6 @@ export function DeliveriesTable({ deliveries }: { deliveries: Delivery[] }) {
       alert("Please select at least one delivery to print")
       return
     }
-    // Open multiple print windows or a combined print page
     const printUrl = `/delivery/print?ids=${selectedIds.join(",")}`
     window.open(printUrl, "_blank")
   }
@@ -82,6 +85,27 @@ export function DeliveriesTable({ deliveries }: { deliveries: Delivery[] }) {
     } finally {
       setUpdatingStatusId(null)
     }
+  }
+
+  const handleTrackingEdit = (id: string, currentTracking: string | null) => {
+    setEditingTrackingId(id)
+    setTrackingInputs({ ...trackingInputs, [id]: currentTracking || "" })
+  }
+
+  const handleTrackingSave = async (id: string) => {
+    const trackingNumber = trackingInputs[id]
+    try {
+      await updateTrackingNumber(id, trackingNumber)
+      router.refresh()
+      setEditingTrackingId(null)
+    } catch (error) {
+      alert(`Failed to update tracking number: ${error instanceof Error ? error.message : "Unknown error"}`)
+    }
+  }
+
+  const handleTrackingCancel = () => {
+    setEditingTrackingId(null)
+    setTrackingInputs({})
   }
 
   return (
@@ -117,6 +141,7 @@ export function DeliveriesTable({ deliveries }: { deliveries: Delivery[] }) {
               <TableHead>Phone</TableHead>
               <TableHead>City</TableHead>
               <TableHead>COD Amount</TableHead>
+              <TableHead>Tracking Number</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Created At</TableHead>
               <TableHead className="text-right">Actions</TableHead>
@@ -125,7 +150,7 @@ export function DeliveriesTable({ deliveries }: { deliveries: Delivery[] }) {
           <TableBody>
             {deliveries.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={9} className="h-24 text-center text-muted-foreground">
                   No deliveries found. Create your first delivery label!
                 </TableCell>
               </TableRow>
@@ -146,6 +171,37 @@ export function DeliveriesTable({ deliveries }: { deliveries: Delivery[] }) {
                       <span className="font-semibold text-green-600">Rs. {delivery.cod_amount}</span>
                     ) : (
                       <span className="text-muted-foreground">N/A</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {editingTrackingId === delivery.id ? (
+                      <div className="flex gap-2">
+                        <Input
+                          value={trackingInputs[delivery.id] || ""}
+                          onChange={(e) => setTrackingInputs({ ...trackingInputs, [delivery.id]: e.target.value })}
+                          placeholder="Enter tracking number"
+                          className="h-8 text-sm"
+                        />
+                        <Button size="sm" onClick={() => handleTrackingSave(delivery.id)}>
+                          Save
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={handleTrackingCancel}>
+                          Cancel
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span className={delivery.tracking_number ? "font-mono text-sm" : "text-muted-foreground"}>
+                          {delivery.tracking_number || "—"}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleTrackingEdit(delivery.id, delivery.tracking_number)}
+                        >
+                          Edit
+                        </Button>
+                      </div>
                     )}
                   </TableCell>
                   <TableCell>

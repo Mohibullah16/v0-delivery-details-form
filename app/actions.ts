@@ -8,6 +8,7 @@ export interface DeliveryData {
   recipientAddress: string
   recipientCity: string
   codAmount?: string
+  items?: string // Add items field
   senderName: string
   senderPhone: string
   senderCnic: string
@@ -25,6 +26,7 @@ export async function saveDelivery(data: DeliveryData) {
       recipient_address: data.recipientAddress,
       recipient_city: data.recipientCity,
       cod_amount: data.codAmount || null,
+      items: data.items || null, // Include items in database
       sender_name: data.senderName,
       sender_phone: data.senderPhone,
       sender_cnic: data.senderCnic,
@@ -58,14 +60,28 @@ export async function getDelivery(id: string) {
 export async function getAllDeliveries() {
   const supabase = await createClient()
 
-  const { data, error } = await supabase.from("deliveries").select("*").order("created_at", { ascending: false })
+  try {
+    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Query timeout")), 30000))
 
-  if (error) {
-    console.error("[v0] Error fetching deliveries:", error)
-    throw new Error("Failed to fetch deliveries")
+    const queryPromise = supabase
+      .from("deliveries")
+      .select("id, recipient_name, recipient_phone, recipient_city, cod_amount, status, created_at, tracking_number")
+      .order("created_at", { ascending: false })
+      .limit(500)
+
+    const { data, error } = (await Promise.race([queryPromise, timeoutPromise])) as any
+
+    if (error) {
+      console.error("[v0] Error fetching deliveries:", error)
+      throw new Error("Failed to fetch deliveries")
+    }
+
+    return data || []
+  } catch (error) {
+    console.error("[v0] Error in getAllDeliveries:", error)
+    // Return empty array on timeout instead of throwing
+    return []
   }
-
-  return data
 }
 
 export async function deleteDelivery(id: string) {
@@ -108,4 +124,17 @@ export async function getDeliveriesByIds(ids: string[]) {
   }
 
   return data
+}
+
+export async function updateTrackingNumber(id: string, trackingNumber: string) {
+  const supabase = await createClient()
+
+  const { error } = await supabase.from("deliveries").update({ tracking_number: trackingNumber }).eq("id", id)
+
+  if (error) {
+    console.error("[v0] Error updating tracking number:", error)
+    throw new Error("Failed to update tracking number")
+  }
+
+  return { success: true }
 }
