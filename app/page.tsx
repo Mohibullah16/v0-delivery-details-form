@@ -10,6 +10,7 @@ import DeliveryPrint from "@/components/delivery-print"
 import { saveDelivery } from "./actions"
 import Link from "next/link"
 import { Database } from "lucide-react"
+import OCRUpload from "@/components/ocr-upload"
 
 const SENDER_DETAILS = {
   name: "Mohibullah Azhar",
@@ -30,6 +31,21 @@ export default function DeliveryForm() {
     codAmount: "",
     items: "",
   })
+
+  const handleOCRDataExtracted = (data: {
+    name?: string
+    phone?: string
+    address?: string
+    city?: string
+  }) => {
+    setRecipientDetails((prev) => ({
+      ...prev,
+      name: data.name || prev.name,
+      phone: data.phone || prev.phone,
+      address: data.address || prev.address,
+      city: data.city || prev.city,
+    }))
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -108,6 +124,8 @@ export default function DeliveryForm() {
             <CardDescription className="text-lg">Enter recipient information for delivery</CardDescription>
           </CardHeader>
           <CardContent>
+            <OCRUpload onDataExtracted={handleOCRDataExtracted} />
+
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name" className="text-lg font-bold">

@@ -207,3 +207,87 @@ export async function updateDelivery(id: string, field: string, value: string) {
 
   return { success: true }
 }
+
+export async function extractDeliveryInfoFromImage(base64Image: string) {
+  const apiKey = process.env.GROQ_API_KEY
+
+  if (!apiKey) {
+    throw new Error("GROQ_API_KEY not configured")
+  }
+
+  try {
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "meta-llama/llama-4-scout-17b-16e-instruct",
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: `Please analyze this delivery label or address image and extract the following information:
+- Recipient Name
+- Phone Number
+- Full Address
+- City
+
+Return the data in JSON format like this:
+{
+  "name": "extracted name or null",
+  "phone": "extracted phone or null",
+  "address": "extracted address or null",
+  "city": "extracted city or null"
+}
+
+Only return valid JSON, no other text.`,
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:image/jpeg;base64,${base64Image}`,
+                },
+              },
+            ],
+          },
+        ],
+        temperature: 0.1,
+        max_tokens: 500,
+      }),
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`Groq API error: ${response.status} - ${errorText}`)
+    }
+
+    const data = await response.json()
+    const content = data.choices[0]?.message?.content
+
+    if (!content) {
+      throw new Error("No response from Groq API")
+    }
+
+    // Extract JSON from the response
+    const jsonMatch = content.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) {
+      throw new Error("Could not extract JSON from response")
+    }
+
+    const extractedData = JSON.parse(jsonMatch[0])
+
+    return {
+      name: extractedData.name || undefined,
+      phone: extractedData.phone || undefined,
+      address: extractedData.address || undefined,
+      city: extractedData.city || undefined,
+    }
+  } catch (error) {
+    console.error("[v0] OCR extraction error:", error)
+    throw new Error(error instanceof Error ? error.message : "Failed to extract information from image")
+  }
+}
