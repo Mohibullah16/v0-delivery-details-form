@@ -65,19 +65,19 @@ When selecting many deliveries for bulk printing, the application would hang or 
 ## Technical Details
 
 ### Batch Processing Algorithm
-```typescript
+\`\`\`typescript
 const batchSize = 100
 for (let i = 0; i < ids.length; i += batchSize) {
   const batch = ids.slice(i, i + batchSize)
   // Process batch...
 }
-```
+\`\`\`
 
 ### Dynamic Render Delay
-```typescript
+\`\`\`typescript
 const renderDelay = Math.min(2000, deliveries.length * 50)
 // 50ms per label, capped at 2 seconds
-```
+\`\`\`
 
 ### Timeout Configuration
 - **Small batches (< 100)**: ~5-10 seconds

@@ -31,7 +31,7 @@ export async function saveDelivery(data: DeliveryData) {
       sender_phone: data.senderPhone,
       sender_cnic: data.senderCnic,
       sender_address: data.senderAddress,
-      status: "prepared", // Set default status
+      status: "new", // Changed default status from "prepared" to "new"
     })
     .select()
     .single()
@@ -136,10 +136,7 @@ export async function getDeliveriesByIds(ids: string[]) {
       const allData = []
 
       for (const batch of batches) {
-        const { data, error } = await supabase
-          .from("deliveries")
-          .select("*")
-          .in("id", batch)
+        const { data, error } = await supabase.from("deliveries").select("*").in("id", batch)
 
         if (error) {
           console.error("[v0] Batch fetch error:", error)
@@ -152,9 +149,7 @@ export async function getDeliveriesByIds(ids: string[]) {
       }
 
       // Sort by created_at after fetching all batches
-      return allData.sort((a, b) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      )
+      return allData.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     })()
 
     // Increased timeout to 30 seconds for large batches

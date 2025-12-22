@@ -27,10 +27,13 @@ interface Delivery {
 }
 
 const statusConfig = {
+  new: { label: "New", color: "bg-gray-500" },
   prepared: { label: "Prepared", color: "bg-blue-500" },
   shipped: { label: "Shipped", color: "bg-yellow-500" },
   delivered: { label: "Delivered", color: "bg-green-500" },
   payment_received: { label: "Payment Received", color: "bg-purple-500" },
+  returned: { label: "Returned", color: "bg-orange-500" },
+  cancelled: { label: "Cancelled", color: "bg-red-500" },
 }
 
 export function DeliveriesTable({ deliveries }: { deliveries: Delivery[] }) {
@@ -78,7 +81,7 @@ export function DeliveriesTable({ deliveries }: { deliveries: Delivery[] }) {
     // Warn if selecting too many deliveries
     if (selectedIds.length > 50) {
       const confirmed = confirm(
-        `You are about to print ${selectedIds.length} delivery labels. This may take some time and could slow down your browser.\n\nFor best performance, consider printing in smaller batches (50 or fewer at a time).\n\nDo you want to continue?`
+        `You are about to print ${selectedIds.length} delivery labels. This may take some time and could slow down your browser.\n\nFor best performance, consider printing in smaller batches (50 or fewer at a time).\n\nDo you want to continue?`,
       )
       if (!confirmed) {
         return
@@ -258,10 +261,13 @@ export function DeliveriesTable({ deliveries }: { deliveries: Delivery[] }) {
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="new">New</SelectItem>
                         <SelectItem value="prepared">Prepared</SelectItem>
                         <SelectItem value="shipped">Shipped</SelectItem>
                         <SelectItem value="delivered">Delivered</SelectItem>
                         <SelectItem value="payment_received">Payment Received</SelectItem>
+                        <SelectItem value="returned">Returned</SelectItem>
+                        <SelectItem value="cancelled">Cancelled</SelectItem>
                       </SelectContent>
                     </Select>
                   </TableCell>
