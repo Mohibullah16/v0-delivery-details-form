@@ -18,6 +18,15 @@ export interface DeliveryData {
 export async function saveDelivery(data: DeliveryData) {
   const supabase = await createClient()
 
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser()
+
+  if (userError || !user) {
+    throw new Error("You must be logged in to create a delivery")
+  }
+
   const { data: delivery, error } = await supabase
     .from("deliveries")
     .insert({
@@ -26,12 +35,13 @@ export async function saveDelivery(data: DeliveryData) {
       recipient_address: data.recipientAddress,
       recipient_city: data.recipientCity,
       cod_amount: data.codAmount || null,
-      items: data.items || null, // Include items in database
+      items: data.items || null,
       sender_name: data.senderName,
       sender_phone: data.senderPhone,
       sender_cnic: data.senderCnic,
       sender_address: data.senderAddress,
-      status: "new", // Changed default status from "prepared" to "new"
+      status: "new",
+      user_id: user.id, // Link delivery to current user
     })
     .select()
     .single()
@@ -290,4 +300,26 @@ Only return valid JSON, no other text.`,
     console.error("[v0] OCR extraction error:", error)
     throw new Error(error instanceof Error ? error.message : "Failed to extract information from image")
   }
+}
+
+export async function claimUnassignedDeliveries() {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser()
+
+  if (userError || !user) {
+    throw new Error("You must be logged in to claim deliveries")
+  }
+
+  const { error } = await supabase.from("deliveries").update({ user_id: user.id }).is("user_id", null)
+
+  if (error) {
+    console.error("[v0] Error claiming deliveries:", error)
+    throw new Error("Failed to claim deliveries")
+  }
+
+  return { success: true }
 }

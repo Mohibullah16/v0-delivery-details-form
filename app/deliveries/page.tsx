@@ -2,8 +2,20 @@ import { getAllDeliveries } from "@/app/actions"
 import { DeliveriesTable } from "@/components/deliveries-table"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { createClient } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
+import UserHeader from "@/components/user-header"
 
 export default async function DeliveriesPage() {
+  const supabase = await createClient()
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+
+  if (!session) {
+    redirect("/auth/login")
+  }
+
   let deliveries = []
   try {
     deliveries = await getAllDeliveries()
@@ -19,9 +31,12 @@ export default async function DeliveriesPage() {
             <h1 className="text-3xl font-bold">All Deliveries</h1>
             <p className="text-muted-foreground mt-1">View and manage all delivery records</p>
           </div>
-          <Button asChild>
-            <Link href="/">Create New Delivery</Link>
-          </Button>
+          <div className="flex gap-2 items-center">
+            <Button asChild>
+              <Link href="/">Create New Delivery</Link>
+            </Button>
+            <UserHeader email={session.user.email || ""} />
+          </div>
         </div>
 
         {deliveries.length === 0 ? (

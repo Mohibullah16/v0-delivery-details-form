@@ -1,7 +1,8 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -11,6 +12,8 @@ import { saveDelivery } from "./actions"
 import Link from "next/link"
 import { Database } from "lucide-react"
 import OCRUpload from "@/components/ocr-upload"
+import { createClient } from "@/lib/supabase/client"
+import UserHeader from "@/components/user-header"
 
 const SENDER_DETAILS = {
   name: "Mohibullah Azhar",
@@ -20,6 +23,10 @@ const SENDER_DETAILS = {
 }
 
 export default function DeliveryForm() {
+  const router = useRouter()
+  const supabase = createClient()
+  const [userEmail, setUserEmail] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
   const [showPrint, setShowPrint] = useState(false)
   const [deliveryId, setDeliveryId] = useState<string>("")
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -31,6 +38,30 @@ export default function DeliveryForm() {
     codAmount: "",
     items: "",
   })
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+
+      if (!session) {
+        router.push("/auth/login")
+      } else {
+        setUserEmail(session.user.email || null)
+        try {
+          const { claimUnassignedDeliveries } = await import("./actions")
+          await claimUnassignedDeliveries()
+        } catch (error) {
+          console.log("[v0] No unassigned deliveries to claim")
+        }
+      }
+
+      setLoading(false)
+    }
+
+    checkAuth()
+  }, [supabase.auth, router])
 
   const handleOCRDataExtracted = (data: {
     name?: string
@@ -88,6 +119,14 @@ export default function DeliveryForm() {
     })
   }
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="text-gray-600">Loading...</div>
+      </div>
+    )
+  }
+
   if (showPrint && deliveryId) {
     const delivery = {
       id: deliveryId,
@@ -109,13 +148,17 @@ export default function DeliveryForm() {
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="mx-auto max-w-2xl">
-        <div className="mb-4 flex justify-end">
-          <Button variant="outline" asChild>
-            <Link href="/deliveries">
-              <Database className="mr-2 h-4 w-4" />
-              View All Deliveries
-            </Link>
-          </Button>
+        <div className="mb-4 flex justify-between items-center">
+          <div />
+          <div className="flex gap-2 items-center">
+            <Button variant="outline" asChild>
+              <Link href="/deliveries">
+                <Database className="mr-2 h-4 w-4" />
+                View All Deliveries
+              </Link>
+            </Button>
+            {userEmail && <UserHeader email={userEmail} />}
+          </div>
         </div>
 
         <Card>
