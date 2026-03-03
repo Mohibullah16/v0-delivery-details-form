@@ -110,7 +110,12 @@ export function DeliveriesTable({ deliveries }: { deliveries: Delivery[] }) {
 
   const startEditing = (id: string, field: string, currentValue: string | null) => {
     setEditingCell({ id, field })
-    setEditValue(currentValue || "")
+    // Strip "Rs. " prefix from price fields for editing
+    let value = currentValue || ""
+    if (["cod_amount", "service_charges", "product_cost"].includes(field) && value.startsWith("Rs. ")) {
+      value = value.replace("Rs. ", "").trim()
+    }
+    setEditValue(value)
   }
 
   const saveEdit = async () => {
@@ -118,13 +123,18 @@ export function DeliveriesTable({ deliveries }: { deliveries: Delivery[] }) {
 
     try {
       const { id, field } = editingCell
+      // Strip "Rs. " prefix and store only the number
+      let valueToSave = editValue.trim()
+      if (["cod_amount", "service_charges", "product_cost"].includes(field)) {
+        valueToSave = valueToSave.replace("Rs. ", "").trim()
+      }
 
       if (field === "tracking_number") {
-        await updateTrackingNumber(id, editValue)
+        await updateTrackingNumber(id, valueToSave)
       } else if (field === "items") {
-        await updateItems(id, editValue)
+        await updateItems(id, valueToSave)
       } else {
-        await updateDelivery(id, field, editValue)
+        await updateDelivery(id, field, valueToSave)
       }
 
       router.refresh()
