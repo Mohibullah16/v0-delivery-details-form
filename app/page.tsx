@@ -37,6 +37,8 @@ export default function DeliveryForm() {
     city: "",
     codAmount: "",
     items: "",
+    serviceCharges: "",
+    productCost: "",
   })
 
   useEffect(() => {
@@ -90,6 +92,8 @@ export default function DeliveryForm() {
         recipientCity: recipientDetails.city,
         codAmount: recipientDetails.codAmount,
         items: recipientDetails.items,
+        serviceCharges: recipientDetails.serviceCharges,
+        productCost: recipientDetails.productCost,
         senderName: SENDER_DETAILS.name,
         senderPhone: SENDER_DETAILS.phone,
         senderCnic: SENDER_DETAILS.cnic,
@@ -116,6 +120,8 @@ export default function DeliveryForm() {
       city: "",
       codAmount: "",
       items: "",
+      serviceCharges: "",
+      productCost: "",
     })
   }
 
@@ -259,6 +265,36 @@ export default function DeliveryForm() {
                   value={recipientDetails.codAmount}
                   onChange={(e) => setRecipientDetails({ ...recipientDetails, codAmount: e.target.value })}
                   placeholder="Enter COD amount if applicable"
+                  className="h-12 text-lg"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="serviceCharges" className="text-lg font-bold">
+                  Service Charges (Optional)
+                </Label>
+                <Input
+                  id="serviceCharges"
+                  type="number"
+                  step="0.01"
+                  value={recipientDetails.serviceCharges}
+                  onChange={(e) => setRecipientDetails({ ...recipientDetails, serviceCharges: e.target.value })}
+                  placeholder="Enter service charges"
+                  className="h-12 text-lg"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="productCost" className="text-lg font-bold">
+                  Product Cost (Optional)
+                </Label>
+                <Input
+                  id="productCost"
+                  type="number"
+                  step="0.01"
+                  value={recipientDetails.productCost}
+                  onChange={(e) => setRecipientDetails({ ...recipientDetails, productCost: e.target.value })}
+                  placeholder="Enter product cost for profit calculation"
                   className="h-12 text-lg"
                 />
               </div>

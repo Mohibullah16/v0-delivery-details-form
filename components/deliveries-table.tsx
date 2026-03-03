@@ -6,13 +6,14 @@ import { useState } from "react"
 import { deleteDelivery, updateDeliveryStatus, updateTrackingNumber, updateItems, updateDelivery } from "@/app/actions"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Trash2, Eye, Printer } from "lucide-react"
+import { Trash2, Eye, Printer, ChevronDown } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { ProfitCalculator } from "./profit-calculator"
 
 interface Delivery {
   id: string
@@ -23,7 +24,9 @@ interface Delivery {
   status: string
   created_at: string
   tracking_number: string | null
-  items: string | null // Add items field
+  items: string | null
+  service_charges: number | null
+  product_cost: number | null
 }
 
 const statusConfig = {
@@ -42,6 +45,7 @@ export function DeliveriesTable({ deliveries }: { deliveries: Delivery[] }) {
   const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null)
   const [editingCell, setEditingCell] = useState<{ id: string; field: string } | null>(null)
   const [editValue, setEditValue] = useState<string>("")
+  const [showFinancials, setShowFinancials] = useState(false)
   const router = useRouter()
 
   const handleDelete = async (id: string) => {
@@ -174,23 +178,32 @@ export function DeliveriesTable({ deliveries }: { deliveries: Delivery[] }) {
   return (
     <div className="space-y-4">
       {selectedIds.length > 0 && (
-        <div className="flex items-center justify-between rounded-lg border bg-muted p-4">
-          <p className="text-sm font-medium">
-            {selectedIds.length} {selectedIds.length === 1 ? "delivery" : "deliveries"} selected
-          </p>
-          <div className="flex gap-2">
-            <Button onClick={handleBulkPrint} variant="default">
-              <Printer className="mr-2 h-4 w-4" />
-              Print Selected
-            </Button>
-            <Button onClick={() => setSelectedIds([])} variant="outline">
-              Clear Selection
-            </Button>
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between rounded-lg border bg-muted p-4">
+            <p className="text-sm font-medium">
+              {selectedIds.length} {selectedIds.length === 1 ? "delivery" : "deliveries"} selected
+            </p>
+            <div className="flex gap-2">
+              <Button onClick={handleBulkPrint} variant="default">
+                <Printer className="mr-2 h-4 w-4" />
+                Print Selected
+              </Button>
+              <Button onClick={() => setSelectedIds([])} variant="outline">
+                Clear Selection
+              </Button>
+            </div>
           </div>
+          <ProfitCalculator selectedDeliveries={selectedIds} allDeliveries={deliveries} />
         </div>
       )}
 
       <div className="rounded-lg border bg-card overflow-x-auto">
+        <div className="flex justify-end p-3 border-b">
+          <Button variant="outline" size="sm" onClick={() => setShowFinancials(!showFinancials)}>
+            <ChevronDown className={`mr-2 h-4 w-4 transition-transform ${showFinancials ? "rotate-180" : ""}`} />
+            {showFinancials ? "Hide" : "Show"} Financials
+          </Button>
+        </div>
         <Table>
           <TableHeader>
             <TableRow>
@@ -205,6 +218,9 @@ export function DeliveriesTable({ deliveries }: { deliveries: Delivery[] }) {
               <TableHead>City</TableHead>
               <TableHead>Items</TableHead>
               <TableHead>COD</TableHead>
+              <TableHead>Service Charges</TableHead>
+              {showFinancials && <TableHead>Product Cost</TableHead>}
+              {showFinancials && <TableHead>Profit</TableHead>}
               <TableHead>Tracking</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Created</TableHead>
@@ -214,35 +230,61 @@ export function DeliveriesTable({ deliveries }: { deliveries: Delivery[] }) {
           <TableBody>
             {deliveries.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={showFinancials ? 13 : 11} className="h-24 text-center text-muted-foreground">
                   No deliveries found. Create your first delivery label!
                 </TableCell>
               </TableRow>
             ) : (
-              deliveries.map((delivery) => (
-                <TableRow key={delivery.id}>
-                  <TableCell>
-                    <Checkbox
-                      checked={selectedIds.includes(delivery.id)}
-                      onCheckedChange={() => toggleSelection(delivery.id)}
-                    />
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    {renderEditableCell(delivery, "recipient_name", delivery.recipient_name)}
-                  </TableCell>
-                  <TableCell>{renderEditableCell(delivery, "recipient_phone", delivery.recipient_phone)}</TableCell>
-                  <TableCell>{renderEditableCell(delivery, "recipient_city", delivery.recipient_city)}</TableCell>
-                  <TableCell>{renderEditableCell(delivery, "items", delivery.items || "—")}</TableCell>
-                  <TableCell>
-                    {renderEditableCell(
-                      delivery,
-                      "cod_amount",
-                      delivery.cod_amount ? `Rs. ${delivery.cod_amount}` : "—",
+              deliveries.map((delivery) => {
+                const receivingAmount = (delivery.cod_amount ? parseFloat(delivery.cod_amount) : 0) - (delivery.service_charges || 0)
+                const profit = receivingAmount - (delivery.product_cost || 0)
+                return (
+                  <TableRow key={delivery.id}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedIds.includes(delivery.id)}
+                        onCheckedChange={() => toggleSelection(delivery.id)}
+                      />
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {renderEditableCell(delivery, "recipient_name", delivery.recipient_name)}
+                    </TableCell>
+                    <TableCell>{renderEditableCell(delivery, "recipient_phone", delivery.recipient_phone)}</TableCell>
+                    <TableCell>{renderEditableCell(delivery, "recipient_city", delivery.recipient_city)}</TableCell>
+                    <TableCell>{renderEditableCell(delivery, "items", delivery.items || "—")}</TableCell>
+                    <TableCell>
+                      {renderEditableCell(
+                        delivery,
+                        "cod_amount",
+                        delivery.cod_amount ? `Rs. ${delivery.cod_amount}` : "—",
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {renderEditableCell(
+                        delivery,
+                        "service_charges",
+                        delivery.service_charges ? `Rs. ${delivery.service_charges.toFixed(2)}` : "—",
+                      )}
+                    </TableCell>
+                    {showFinancials && (
+                      <TableCell>
+                        {renderEditableCell(
+                          delivery,
+                          "product_cost",
+                          delivery.product_cost ? `Rs. ${delivery.product_cost.toFixed(2)}` : "—",
+                        )}
+                      </TableCell>
                     )}
-                  </TableCell>
-                  <TableCell>
-                    {renderEditableCell(delivery, "tracking_number", delivery.tracking_number || "—")}
-                  </TableCell>
+                    {showFinancials && (
+                      <TableCell>
+                        <Badge className={profit >= 0 ? "bg-green-500" : "bg-red-500"}>
+                          {profit >= 0 ? "+" : ""} Rs. {profit.toFixed(2)}
+                        </Badge>
+                      </TableCell>
+                    )}
+                    <TableCell>
+                      {renderEditableCell(delivery, "tracking_number", delivery.tracking_number || "—")}
+                    </TableCell>
                   <TableCell>
                     <Select
                       value={delivery.status}
@@ -297,9 +339,10 @@ export function DeliveriesTable({ deliveries }: { deliveries: Delivery[] }) {
                         )}
                       </Button>
                     </div>
-                  </TableCell>
-                </TableRow>
-              ))
+                    </TableCell>
+                  </TableRow>
+                )
+              })
             )}
           </TableBody>
         </Table>

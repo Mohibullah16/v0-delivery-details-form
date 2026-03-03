@@ -8,7 +8,9 @@ export interface DeliveryData {
   recipientAddress: string
   recipientCity: string
   codAmount?: string
-  items?: string // Add items field
+  items?: string
+  serviceCharges?: string
+  productCost?: string
   senderName: string
   senderPhone: string
   senderCnic: string
@@ -36,12 +38,14 @@ export async function saveDelivery(data: DeliveryData) {
       recipient_city: data.recipientCity,
       cod_amount: data.codAmount || null,
       items: data.items || null,
+      service_charges: data.serviceCharges ? parseFloat(data.serviceCharges) : null,
+      product_cost: data.productCost ? parseFloat(data.productCost) : null,
       sender_name: data.senderName,
       sender_phone: data.senderPhone,
       sender_cnic: data.senderCnic,
       sender_address: data.senderAddress,
       status: "new",
-      user_id: user.id, // Link delivery to current user
+      user_id: user.id,
     })
     .select()
     .single()
@@ -75,7 +79,7 @@ export async function getAllDeliveries() {
       const { data, error } = await supabase
         .from("deliveries")
         .select(
-          "id, recipient_name, recipient_phone, recipient_city, cod_amount, status, created_at, tracking_number, items",
+          "id, recipient_name, recipient_phone, recipient_city, cod_amount, status, created_at, tracking_number, items, service_charges, product_cost",
         )
         .order("created_at", { ascending: false })
         .limit(500)
