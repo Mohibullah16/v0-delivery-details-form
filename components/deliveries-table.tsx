@@ -6,7 +6,7 @@ import { useState } from "react"
 import { deleteDelivery, updateDeliveryStatus, updateTrackingNumber, updateItems, updateDelivery } from "@/app/actions"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Trash2, Eye, Printer, ChevronDown, Upload } from "lucide-react"
+import { Trash2, Eye, Printer, ChevronDown, Upload, MessageCircle } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -286,7 +286,22 @@ export function DeliveriesTable({ deliveries }: { deliveries: Delivery[] }) {
                     <TableCell className="font-medium">
                       {renderEditableCell(delivery, "recipient_name", delivery.recipient_name)}
                     </TableCell>
-                    <TableCell>{renderEditableCell(delivery, "recipient_phone", delivery.recipient_phone)}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <span>{renderEditableCell(delivery, "recipient_phone", delivery.recipient_phone)}</span>
+                        {delivery.recipient_phone && (
+                          <a
+                            href={`https://wa.me/+92${delivery.recipient_phone.replace(/^0/, "")}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="Send WhatsApp message"
+                            className="text-green-600 hover:text-green-700 transition-colors"
+                          >
+                            <MessageCircle className="h-4 w-4" />
+                          </a>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell>{renderEditableCell(delivery, "recipient_city", delivery.recipient_city)}</TableCell>
                     <TableCell>{renderEditableCell(delivery, "items", delivery.items || "—")}</TableCell>
                     <TableCell>
