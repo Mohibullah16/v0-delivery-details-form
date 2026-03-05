@@ -151,7 +151,7 @@ export function DeliveriesTable({ deliveries }: { deliveries: Delivery[] }) {
         {displayValue}
       </div>
     )
-  }, [editingCell, editValue, handleKeyDown])
+  }, [editingCell, editValue])
 
   const toggleSelectAll = useCallback(() => {
     if (selectedIds.length === deliveries.length) {
