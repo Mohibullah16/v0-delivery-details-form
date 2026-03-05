@@ -44,7 +44,7 @@ export default function InvoiceUpload({ deliveryId, onDataExtracted }: InvoiceUp
           setExtractedData(data)
           
           // Auto-update the delivery with extracted data
-          await updateInvoiceData(deliveryId, data.trackingNumber, data.serviceCharges)
+          await updateInvoiceData(deliveryId, data.trackingNumber, data.serviceCharges, data.codAmount)
           
           setSuccess(true)
           onDataExtracted?.(data)
@@ -90,7 +90,7 @@ export default function InvoiceUpload({ deliveryId, onDataExtracted }: InvoiceUp
           <Upload className="h-5 w-5" />
           Upload Shipping Invoice
         </CardTitle>
-        <CardDescription>Extract tracking number and service charges from courier invoice</CardDescription>
+        <CardDescription>Extract tracking number, COD amount, and service charges from courier invoice</CardDescription>
       </CardHeader>
       <CardContent>
         {success ? (
@@ -99,6 +99,9 @@ export default function InvoiceUpload({ deliveryId, onDataExtracted }: InvoiceUp
             <p className="text-green-700 font-semibold">Invoice processed successfully!</p>
             {extractedData?.trackingNumber && (
               <p className="text-sm text-green-600">Tracking: {extractedData.trackingNumber}</p>
+            )}
+            {extractedData?.codAmount && (
+              <p className="text-sm text-green-600">COD Amount: Rs. {extractedData.codAmount.toFixed(2)}</p>
             )}
             {extractedData?.serviceCharges && (
               <p className="text-sm text-green-600">Service Charges: Rs. {extractedData.serviceCharges.toFixed(2)}</p>
