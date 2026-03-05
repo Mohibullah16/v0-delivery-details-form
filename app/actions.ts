@@ -306,6 +306,101 @@ Only return valid JSON, no other text.`,
   }
 }
 
+export async function extractInvoiceInfo(base64Image: string) {
+  const apiKey = process.env.GROQ_API_KEY
+
+  if (!apiKey) {
+    throw new Error("GROQ_API_KEY not configured")
+  }
+
+  try {
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "meta-llama/llama-4-scout-17b-16e-instruct",
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: `Please analyze this courier shipping invoice and extract the following information:
+- Tracking Number (CN or Consignment Number - this is the most important field)
+- Service Charges (GST/Tax should be EXCLUDED - extract only the base service charges)
+
+Return the data in JSON format like this:
+{
+  "trackingNumber": "extracted CN or consignment number or null",
+  "serviceCharges": "extracted service charges amount as number or null"
+}
+
+For service charges, look for lines that say "Service Charge", "Handling Fee", "Delivery Charge" etc. and extract only the base amount without GST/Tax.
+Only return valid JSON, no other text.`,
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:image/jpeg;base64,${base64Image}`,
+                },
+              },
+            ],
+          },
+        ],
+        temperature: 0.1,
+        max_tokens: 500,
+      }),
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`Groq API error: ${response.status} - ${errorText}`)
+    }
+
+    const data = await response.json()
+    const content = data.choices[0]?.message?.content
+
+    if (!content) {
+      throw new Error("No response from Groq API")
+    }
+
+    // Extract JSON from the response
+    const jsonMatch = content.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) {
+      throw new Error("Could not extract JSON from response")
+    }
+
+    const extractedData = JSON.parse(jsonMatch[0])
+
+    return {
+      trackingNumber: extractedData.trackingNumber || undefined,
+      serviceCharges: extractedData.serviceCharges ? parseFloat(extractedData.serviceCharges) : undefined,
+    }
+  } catch (error) {
+    console.error("[v0] Invoice OCR extraction error:", error)
+    throw new Error(error instanceof Error ? error.message : "Failed to extract information from invoice")
+  }
+}
+
+export async function updateInvoiceData(deliveryId: string, trackingNumber?: string, serviceCharges?: number) {
+  const supabase = await createClient()
+
+  const { error } = await supabase.from("deliveries").update({
+    ...(trackingNumber && { tracking_number: trackingNumber }),
+    ...(serviceCharges !== undefined && { service_charges: serviceCharges }),
+  }).eq("id", deliveryId)
+
+  if (error) {
+    console.error("[v0] Error updating invoice data:", error)
+    throw new Error("Failed to update delivery with invoice data")
+  }
+
+  return { success: true }
+}
+
 export async function claimUnassignedDeliveries() {
   const supabase = await createClient()
 

@@ -6,7 +6,7 @@ import { useState } from "react"
 import { deleteDelivery, updateDeliveryStatus, updateTrackingNumber, updateItems, updateDelivery } from "@/app/actions"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Trash2, Eye, Printer, ChevronDown } from "lucide-react"
+import { Trash2, Eye, Printer, ChevronDown, Upload } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { ProfitCalculator } from "./profit-calculator"
+import InvoiceUpload from "./invoice-upload"
 
 interface Delivery {
   id: string
@@ -46,6 +47,7 @@ export function DeliveriesTable({ deliveries }: { deliveries: Delivery[] }) {
   const [editingCell, setEditingCell] = useState<{ id: string; field: string } | null>(null)
   const [editValue, setEditValue] = useState<string>("")
   const [showFinancials, setShowFinancials] = useState(false)
+  const [uploadingInvoiceId, setUploadingInvoiceId] = useState<string | null>(null)
   const router = useRouter()
 
   const handleDelete = async (id: string) => {
@@ -187,6 +189,31 @@ export function DeliveriesTable({ deliveries }: { deliveries: Delivery[] }) {
 
   return (
     <div className="space-y-4">
+      {uploadingInvoiceId && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-4 border-b flex justify-between items-center sticky top-0 bg-white">
+              <h2 className="text-lg font-semibold">Upload Invoice</h2>
+              <button
+                onClick={() => setUploadingInvoiceId(null)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-4">
+              <InvoiceUpload
+                deliveryId={uploadingInvoiceId}
+                onDataExtracted={() => {
+                  router.refresh()
+                  setUploadingInvoiceId(null)
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       {selectedIds.length > 0 && (
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between rounded-lg border bg-muted p-4">
@@ -331,6 +358,14 @@ export function DeliveriesTable({ deliveries }: { deliveries: Delivery[] }) {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setUploadingInvoiceId(delivery.id)}
+                        title="Upload courier invoice to extract tracking and charges"
+                      >
+                        <Upload className="h-4 w-4" />
+                      </Button>
                       <Button variant="outline" size="sm" asChild>
                         <Link href={`/delivery/${delivery.id}`}>
                           <Eye className="h-4 w-4" />
