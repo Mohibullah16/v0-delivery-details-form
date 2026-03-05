@@ -80,9 +80,11 @@ export async function getAllDeliveries() {
         .from("deliveries")
         .select(
           "id, recipient_name, recipient_phone, recipient_city, cod_amount, status, created_at, tracking_number, items, service_charges, product_cost",
+          { count: "exact" }
         )
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false })
-        .limit(500)
+        .limit(250)
 
       if (error) {
         throw new Error("Failed to fetch deliveries")
@@ -364,7 +366,7 @@ export async function extractInvoiceInfo(base64Image: string) {
                 type: "text",
                 text: `Please analyze this courier shipping invoice and extract the following information:
 - Tracking Number (CN or Consignment Number - this is the most important field)
-- Service Charges (GST/Tax should be EXCLUDED - extract only the base service charges)
+- Service Charges (extract the total service charges amount including all fees)
 
 Return the data in JSON format like this:
 {
@@ -372,7 +374,7 @@ Return the data in JSON format like this:
   "serviceCharges": "extracted service charges amount as number or null"
 }
 
-For service charges, look for lines that say "Service Charge", "Handling Fee", "Delivery Charge" etc. and extract only the base amount without GST/Tax.
+For service charges, look for lines that say "Service Charge", "Handling Fee", "Delivery Charge", "Total Charges" etc. and extract the total amount.
 Only return valid JSON, no other text.`,
               },
               {
