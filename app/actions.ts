@@ -222,6 +222,40 @@ export async function updateDelivery(id: string, field: string, value: string) {
   return { success: true }
 }
 
+// Normalize Pakistani phone numbers to 11-digit format starting with 0
+function normalizePhoneNumber(phone: string | undefined): string | undefined {
+  if (!phone) return undefined
+
+  // Remove all non-digit characters
+  const digitsOnly = phone.replace(/\D/g, "")
+
+  // If starts with 92 (international format), convert to 0 format
+  let normalized = digitsOnly.startsWith("92") ? "0" + digitsOnly.slice(2) : digitsOnly
+
+  // Ensure it starts with 0 and has 11 digits total
+  if (!normalized.startsWith("0")) {
+    normalized = "0" + normalized
+  }
+
+  // Take only the last 11 digits to ensure 11-digit format
+  if (normalized.length > 11) {
+    normalized = normalized.slice(-11)
+  }
+
+  // Pad with leading zeros if less than 11 digits (though 0 should already be there)
+  if (normalized.length < 11) {
+    return undefined // Invalid format
+  }
+
+  // Validate format: First digit should be 0, second digit should be 3-9 (for mobile) or 0-9 (for landline starting with 00)
+  const secondDigit = parseInt(normalized[1])
+  if (isNaN(secondDigit)) {
+    return undefined
+  }
+
+  return normalized
+}
+
 export async function extractDeliveryInfoFromImage(base64Image: string) {
   const apiKey = process.env.GROQ_API_KEY
 
@@ -296,7 +330,7 @@ Only return valid JSON, no other text.`,
 
     return {
       name: extractedData.name || undefined,
-      phone: extractedData.phone || undefined,
+      phone: normalizePhoneNumber(extractedData.phone),
       address: extractedData.address || undefined,
       city: extractedData.city || undefined,
     }
