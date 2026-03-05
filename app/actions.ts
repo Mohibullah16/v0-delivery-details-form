@@ -8,7 +8,9 @@ export interface DeliveryData {
   recipientAddress: string
   recipientCity: string
   codAmount?: string
-  items?: string // Add items field
+  items?: string
+  serviceCharges?: string
+  productCost?: string
   senderName: string
   senderPhone: string
   senderCnic: string
@@ -36,12 +38,14 @@ export async function saveDelivery(data: DeliveryData) {
       recipient_city: data.recipientCity,
       cod_amount: data.codAmount || null,
       items: data.items || null,
+      service_charges: data.serviceCharges ? parseFloat(data.serviceCharges) : null,
+      product_cost: data.productCost ? parseFloat(data.productCost) : null,
       sender_name: data.senderName,
       sender_phone: data.senderPhone,
       sender_cnic: data.senderCnic,
       sender_address: data.senderAddress,
       status: "new",
-      user_id: user.id, // Link delivery to current user
+      user_id: user.id,
     })
     .select()
     .single()
@@ -75,7 +79,7 @@ export async function getAllDeliveries() {
       const { data, error } = await supabase
         .from("deliveries")
         .select(
-          "id, recipient_name, recipient_phone, recipient_city, cod_amount, status, created_at, tracking_number, items",
+          "id, recipient_name, recipient_phone, recipient_city, cod_amount, status, created_at, tracking_number, items, service_charges, product_cost",
         )
         .order("created_at", { ascending: false })
         .limit(500)
@@ -218,6 +222,40 @@ export async function updateDelivery(id: string, field: string, value: string) {
   return { success: true }
 }
 
+// Normalize Pakistani phone numbers to 11-digit format starting with 0
+function normalizePhoneNumber(phone: string | undefined): string | undefined {
+  if (!phone) return undefined
+
+  // Remove all non-digit characters
+  const digitsOnly = phone.replace(/\D/g, "")
+
+  // If starts with 92 (international format), convert to 0 format
+  let normalized = digitsOnly.startsWith("92") ? "0" + digitsOnly.slice(2) : digitsOnly
+
+  // Ensure it starts with 0 and has 11 digits total
+  if (!normalized.startsWith("0")) {
+    normalized = "0" + normalized
+  }
+
+  // Take only the last 11 digits to ensure 11-digit format
+  if (normalized.length > 11) {
+    normalized = normalized.slice(-11)
+  }
+
+  // Pad with leading zeros if less than 11 digits (though 0 should already be there)
+  if (normalized.length < 11) {
+    return undefined // Invalid format
+  }
+
+  // Validate format: First digit should be 0, second digit should be 3-9 (for mobile) or 0-9 (for landline starting with 00)
+  const secondDigit = parseInt(normalized[1])
+  if (isNaN(secondDigit)) {
+    return undefined
+  }
+
+  return normalized
+}
+
 export async function extractDeliveryInfoFromImage(base64Image: string) {
   const apiKey = process.env.GROQ_API_KEY
 
@@ -292,7 +330,7 @@ Only return valid JSON, no other text.`,
 
     return {
       name: extractedData.name || undefined,
-      phone: extractedData.phone || undefined,
+      phone: normalizePhoneNumber(extractedData.phone),
       address: extractedData.address || undefined,
       city: extractedData.city || undefined,
     }
@@ -300,6 +338,101 @@ Only return valid JSON, no other text.`,
     console.error("[v0] OCR extraction error:", error)
     throw new Error(error instanceof Error ? error.message : "Failed to extract information from image")
   }
+}
+
+export async function extractInvoiceInfo(base64Image: string) {
+  const apiKey = process.env.GROQ_API_KEY
+
+  if (!apiKey) {
+    throw new Error("GROQ_API_KEY not configured")
+  }
+
+  try {
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "meta-llama/llama-4-scout-17b-16e-instruct",
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: `Please analyze this courier shipping invoice and extract the following information:
+- Tracking Number (CN or Consignment Number - this is the most important field)
+- Service Charges (GST/Tax should be EXCLUDED - extract only the base service charges)
+
+Return the data in JSON format like this:
+{
+  "trackingNumber": "extracted CN or consignment number or null",
+  "serviceCharges": "extracted service charges amount as number or null"
+}
+
+For service charges, look for lines that say "Service Charge", "Handling Fee", "Delivery Charge" etc. and extract only the base amount without GST/Tax.
+Only return valid JSON, no other text.`,
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:image/jpeg;base64,${base64Image}`,
+                },
+              },
+            ],
+          },
+        ],
+        temperature: 0.1,
+        max_tokens: 500,
+      }),
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`Groq API error: ${response.status} - ${errorText}`)
+    }
+
+    const data = await response.json()
+    const content = data.choices[0]?.message?.content
+
+    if (!content) {
+      throw new Error("No response from Groq API")
+    }
+
+    // Extract JSON from the response
+    const jsonMatch = content.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) {
+      throw new Error("Could not extract JSON from response")
+    }
+
+    const extractedData = JSON.parse(jsonMatch[0])
+
+    return {
+      trackingNumber: extractedData.trackingNumber || undefined,
+      serviceCharges: extractedData.serviceCharges ? parseFloat(extractedData.serviceCharges) : undefined,
+    }
+  } catch (error) {
+    console.error("[v0] Invoice OCR extraction error:", error)
+    throw new Error(error instanceof Error ? error.message : "Failed to extract information from invoice")
+  }
+}
+
+export async function updateInvoiceData(deliveryId: string, trackingNumber?: string, serviceCharges?: number) {
+  const supabase = await createClient()
+
+  const { error } = await supabase.from("deliveries").update({
+    ...(trackingNumber && { tracking_number: trackingNumber }),
+    ...(serviceCharges !== undefined && { service_charges: serviceCharges }),
+  }).eq("id", deliveryId)
+
+  if (error) {
+    console.error("[v0] Error updating invoice data:", error)
+    throw new Error("Failed to update delivery with invoice data")
+  }
+
+  return { success: true }
 }
 
 export async function claimUnassignedDeliveries() {

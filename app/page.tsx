@@ -37,6 +37,8 @@ export default function DeliveryForm() {
     city: "",
     codAmount: "",
     items: "",
+    serviceCharges: "",
+    productCost: "",
   })
 
   useEffect(() => {
@@ -90,6 +92,8 @@ export default function DeliveryForm() {
         recipientCity: recipientDetails.city,
         codAmount: recipientDetails.codAmount,
         items: recipientDetails.items,
+        serviceCharges: recipientDetails.serviceCharges,
+        productCost: recipientDetails.productCost,
         senderName: SENDER_DETAILS.name,
         senderPhone: SENDER_DETAILS.phone,
         senderCnic: SENDER_DETAILS.cnic,
@@ -116,6 +120,8 @@ export default function DeliveryForm() {
       city: "",
       codAmount: "",
       items: "",
+      serviceCharges: "",
+      productCost: "",
     })
   }
 
@@ -128,6 +134,41 @@ export default function DeliveryForm() {
   }
 
   if (showPrint && deliveryId) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 flex items-center justify-center">
+        <UserHeader />
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 top-16">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-4 border-b flex justify-between items-center sticky top-0 bg-white">
+              <h2 className="text-lg font-semibold">Delivery Created Successfully!</h2>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="text-center space-y-4">
+                <p className="text-gray-600">Your delivery label has been created successfully.</p>
+                <p className="text-sm text-gray-500">You can now print the label or manage your deliveries.</p>
+                <div className="flex gap-3 justify-center pt-4">
+                  <Button
+                    onClick={() => router.push("/deliveries")}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    Go to Deliveries
+                  </Button>
+                  <Button
+                    onClick={handleReset}
+                    variant="outline"
+                  >
+                    Create Another
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (false && deliveryId) {
     const delivery = {
       id: deliveryId,
       recipient_name: recipientDetails.name,
@@ -259,6 +300,36 @@ export default function DeliveryForm() {
                   value={recipientDetails.codAmount}
                   onChange={(e) => setRecipientDetails({ ...recipientDetails, codAmount: e.target.value })}
                   placeholder="Enter COD amount if applicable"
+                  className="h-12 text-lg"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="serviceCharges" className="text-lg font-bold">
+                  Service Charges (Optional)
+                </Label>
+                <Input
+                  id="serviceCharges"
+                  type="number"
+                  step="0.01"
+                  value={recipientDetails.serviceCharges}
+                  onChange={(e) => setRecipientDetails({ ...recipientDetails, serviceCharges: e.target.value })}
+                  placeholder="Enter service charges"
+                  className="h-12 text-lg"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="productCost" className="text-lg font-bold">
+                  Product Cost (Optional)
+                </Label>
+                <Input
+                  id="productCost"
+                  type="number"
+                  step="0.01"
+                  value={recipientDetails.productCost}
+                  onChange={(e) => setRecipientDetails({ ...recipientDetails, productCost: e.target.value })}
+                  placeholder="Enter product cost for profit calculation"
                   className="h-12 text-lg"
                 />
               </div>
