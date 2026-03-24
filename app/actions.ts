@@ -75,6 +75,16 @@ export async function getAllDeliveries() {
   const supabase = await createClient()
 
   try {
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser()
+
+    if (userError || !user) {
+      console.error("[v0] User not authenticated")
+      return []
+    }
+
     const queryPromise = (async () => {
       const { data, error } = await supabase
         .from("deliveries")
