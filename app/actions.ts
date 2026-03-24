@@ -374,21 +374,13 @@ export async function extractInvoiceInfo(base64Image: string) {
             content: [
               {
                 type: "text",
-                text: `Please analyze this courier shipping invoice and extract the following information:
-- Tracking Number (CN or Consignment Number - this is the most important field)
-- Service Charges (extract the total service charges amount including all fees)
-- COD Amount (Cash on Delivery amount - the amount to be collected from customer)
+                text: `Extract from courier invoice:
+1. CN/Tracking Number
+2. Service Charges (only the charge amount, ignore GST)
+3. COD Amount
 
-Return the data in JSON format like this:
-{
-  "trackingNumber": "extracted CN or consignment number or null",
-  "serviceCharges": "extracted service charges amount as number or null",
-  "codAmount": "extracted COD amount as number or null"
-}
-
-For service charges, look for lines that say "Service Charge", "Handling Fee", "Delivery Charge", "Total Charges" etc.
-For COD amount, look for fields like "COD Amount", "Amount to Collect", "Total COD", "Payable Amount" etc.
-Only return valid JSON, no other text.`,
+Return ONLY valid JSON:
+{"trackingNumber":"value or null","serviceCharges":number or null,"codAmount":number or null}`,
               },
               {
                 type: "image_url",
@@ -399,8 +391,8 @@ Only return valid JSON, no other text.`,
             ],
           },
         ],
-        temperature: 0.1,
-        max_tokens: 500,
+        temperature: 0,
+        max_tokens: 100,
       }),
     })
 
@@ -417,7 +409,7 @@ Only return valid JSON, no other text.`,
     }
 
     // Extract JSON from the response
-    const jsonMatch = content.match(/\{[\s\S]*\}/)
+    const jsonMatch = content.match(/\{[^{}]*\}/)
     if (!jsonMatch) {
       throw new Error("Could not extract JSON from response")
     }
