@@ -40,23 +40,23 @@ Continue building your app on:
 ### Local Development Setup
 
 1. **Clone the repository**
-   ```bash
+   \`\`\`bash
    git clone <repository-url>
    cd v0-delivery-details-form
-   ```
+   \`\`\`
 
 2. **Install dependencies**
-   ```bash
+   \`\`\`bash
    npm install
-   ```
+   \`\`\`
 
 3. **Set up environment variables**
    Create a `.env.local` file in the project root:
-   ```
+   \`\`\`
    NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
    GROQ_API_KEY=your_groq_api_key
-   ```
+   \`\`\`
 
 4. **Run database migrations**
    - Go to your Supabase project dashboard
@@ -73,9 +73,9 @@ Continue building your app on:
      - `009_assign_deliveries_to_user.sql` - Assigns old deliveries to user
 
 5. **Start development server**
-   ```bash
+   \`\`\`bash
    npm run dev
-   ```
+   \`\`\`
    Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## Features
@@ -109,7 +109,7 @@ Continue building your app on:
 
 ## Project Structure
 
-```
+\`\`\`
 ├── app/
 │   ├── auth/                    # Authentication pages
 │   ├── page.tsx                 # Main delivery form
@@ -126,7 +126,7 @@ Continue building your app on:
 │   └── supabase/                # Supabase client setup
 ├── scripts/                     # Database migrations
 └── proxy.ts                     # Auth middleware
-```
+\`\`\`
 
 ## Deployment
 
@@ -149,11 +149,11 @@ After deployment, when you create the first user account:
 4. Any existing delivery records will be automatically assigned to your account
 
 To manually assign existing deliveries to a user, run:
-```sql
+\`\`\`sql
 UPDATE deliveries 
 SET user_id = 'YOUR_USER_ID_HERE'
 WHERE user_id IS NULL;
-```
+\`\`\`
 
 ## Technologies Used
 

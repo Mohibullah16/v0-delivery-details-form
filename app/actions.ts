@@ -75,14 +75,27 @@ export async function getAllDeliveries() {
   const supabase = await createClient()
 
   try {
+    // Get the current authenticated user
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser()
+
+    if (userError || !user) {
+      console.error("[v0] User not authenticated:", userError)
+      return []
+    }
+
     const queryPromise = (async () => {
       const { data, error } = await supabase
         .from("deliveries")
         .select(
           "id, recipient_name, recipient_phone, recipient_city, cod_amount, status, created_at, tracking_number, items, service_charges, product_cost",
+          { count: "exact" }
         )
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false })
-        .limit(500)
+        .limit(250)
 
       if (error) {
         throw new Error("Failed to fetch deliveries")
@@ -222,6 +235,16 @@ export async function updateDelivery(id: string, field: string, value: string) {
   return { success: true }
 }
 
+// Capitalize first letter of each word in a name
+function capitalizeName(name: string | undefined): string | undefined {
+  if (!name) return undefined
+  return name
+    .toLowerCase()
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ")
+}
+
 // Normalize Pakistani phone numbers to 11-digit format starting with 0
 function normalizePhoneNumber(phone: string | undefined): string | undefined {
   if (!phone) return undefined
@@ -329,7 +352,7 @@ Only return valid JSON, no other text.`,
     const extractedData = JSON.parse(jsonMatch[0])
 
     return {
-      name: extractedData.name || undefined,
+      name: capitalizeName(extractedData.name),
       phone: normalizePhoneNumber(extractedData.phone),
       address: extractedData.address || undefined,
       city: extractedData.city || undefined,
@@ -364,15 +387,18 @@ export async function extractInvoiceInfo(base64Image: string) {
                 type: "text",
                 text: `Please analyze this courier shipping invoice and extract the following information:
 - Tracking Number (CN or Consignment Number - this is the most important field)
-- Service Charges (GST/Tax should be EXCLUDED - extract only the base service charges)
+- Service Charges (extract the total service charges amount including all fees)
+- COD Amount (Cash on Delivery amount - the amount to be collected from customer)
 
 Return the data in JSON format like this:
 {
   "trackingNumber": "extracted CN or consignment number or null",
-  "serviceCharges": "extracted service charges amount as number or null"
+  "serviceCharges": "extracted service charges amount as number or null",
+  "codAmount": "extracted COD amount as number or null"
 }
 
-For service charges, look for lines that say "Service Charge", "Handling Fee", "Delivery Charge" etc. and extract only the base amount without GST/Tax.
+For service charges, look for lines that say "Service Charge", "Handling Fee", "Delivery Charge", "Total Charges" etc.
+For COD amount, look for fields like "COD Amount", "Amount to Collect", "Total COD", "Payable Amount" etc.
 Only return valid JSON, no other text.`,
               },
               {
@@ -412,6 +438,7 @@ Only return valid JSON, no other text.`,
     return {
       trackingNumber: extractedData.trackingNumber || undefined,
       serviceCharges: extractedData.serviceCharges ? parseFloat(extractedData.serviceCharges) : undefined,
+      codAmount: extractedData.codAmount ? parseFloat(extractedData.codAmount) : undefined,
     }
   } catch (error) {
     console.error("[v0] Invoice OCR extraction error:", error)
@@ -419,12 +446,18 @@ Only return valid JSON, no other text.`,
   }
 }
 
-export async function updateInvoiceData(deliveryId: string, trackingNumber?: string, serviceCharges?: number) {
+export async function updateInvoiceData(
+  deliveryId: string,
+  trackingNumber?: string,
+  serviceCharges?: number,
+  codAmount?: number,
+) {
   const supabase = await createClient()
 
   const { error } = await supabase.from("deliveries").update({
     ...(trackingNumber && { tracking_number: trackingNumber }),
     ...(serviceCharges !== undefined && { service_charges: serviceCharges }),
+    ...(codAmount !== undefined && { cod_amount: codAmount }),
   }).eq("id", deliveryId)
 
   if (error) {

@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import { deleteDelivery, updateDeliveryStatus, updateTrackingNumber, updateItems, updateDelivery } from "@/app/actions"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -50,55 +50,21 @@ export function DeliveriesTable({ deliveries }: { deliveries: Delivery[] }) {
   const [uploadingInvoiceId, setUploadingInvoiceId] = useState<string | null>(null)
   const router = useRouter()
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this delivery?")) {
-      return
-    }
+  const handleDelete = useCallback(async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this delivery?")) return
 
     setDeletingId(id)
     try {
       await deleteDelivery(id)
       router.refresh()
     } catch (error) {
-      alert(`Failed to delete delivery: ${error instanceof Error ? error.message : "Unknown error"}`)
+      alert(`Failed to delete: ${error instanceof Error ? error.message : "Unknown error"}`)
     } finally {
       setDeletingId(null)
     }
-  }
+  }, [router])
 
-  const toggleSelection = (id: string) => {
-    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]))
-  }
-
-  const toggleSelectAll = () => {
-    if (selectedIds.length === deliveries.length) {
-      setSelectedIds([])
-    } else {
-      setSelectedIds(deliveries.map((d) => d.id))
-    }
-  }
-
-  const handleBulkPrint = () => {
-    if (selectedIds.length === 0) {
-      alert("Please select at least one delivery to print")
-      return
-    }
-
-    // Warn if selecting too many deliveries
-    if (selectedIds.length > 50) {
-      const confirmed = confirm(
-        `You are about to print ${selectedIds.length} delivery labels. This may take some time and could slow down your browser.\n\nFor best performance, consider printing in smaller batches (50 or fewer at a time).\n\nDo you want to continue?`,
-      )
-      if (!confirmed) {
-        return
-      }
-    }
-
-    const printUrl = `/delivery/print?ids=${selectedIds.join(",")}`
-    window.open(printUrl, "_blank")
-  }
-
-  const handleStatusUpdate = async (id: string, newStatus: string) => {
+  const handleStatusUpdate = useCallback(async (id: string, newStatus: string) => {
     setUpdatingStatusId(id)
     try {
       await updateDeliveryStatus(id, newStatus)
@@ -108,7 +74,7 @@ export function DeliveriesTable({ deliveries }: { deliveries: Delivery[] }) {
     } finally {
       setUpdatingStatusId(null)
     }
-  }
+  }, [router])
 
   const startEditing = (id: string, field: string, currentValue: string | null) => {
     setEditingCell({ id, field })
@@ -160,7 +126,7 @@ export function DeliveriesTable({ deliveries }: { deliveries: Delivery[] }) {
     }
   }
 
-  const renderEditableCell = (delivery: Delivery, field: string, displayValue: string | React.ReactNode) => {
+  const renderEditableCell = useCallback((delivery: Delivery, field: string, displayValue: string | React.ReactNode) => {
     const isEditing = editingCell?.id === delivery.id && editingCell?.field === field
 
     if (isEditing) {
@@ -179,13 +145,31 @@ export function DeliveriesTable({ deliveries }: { deliveries: Delivery[] }) {
 
     return (
       <div
-        onDoubleClick={() => startEditing(delivery.id, field, editValue || (displayValue as string))}
+        onDoubleClick={() => startEditing(delivery.id, field, String(displayValue))}
         className="cursor-text hover:bg-muted/50 p-1 rounded transition-colors"
       >
         {displayValue}
       </div>
     )
-  }
+  }, [editingCell, editValue])
+
+  const toggleSelectAll = useCallback(() => {
+    if (selectedIds.length === deliveries.length) {
+      setSelectedIds([])
+    } else {
+      setSelectedIds(deliveries.map((d) => d.id))
+    }
+  }, [selectedIds.length, deliveries.length])
+
+  const toggleSelection = useCallback((id: string) => {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]))
+  }, [])
+
+  const handleBulkPrint = useCallback(() => {
+    if (selectedIds.length === 0) return
+    const idsParam = selectedIds.join(",")
+    window.open(`/delivery/print?ids=${idsParam}`, "_blank")
+  }, [selectedIds])
 
   return (
     <div className="space-y-4">
@@ -337,68 +321,80 @@ export function DeliveriesTable({ deliveries }: { deliveries: Delivery[] }) {
                     <TableCell>
                       {renderEditableCell(delivery, "tracking_number", delivery.tracking_number || "—")}
                     </TableCell>
-                  <TableCell>
-                    <Select
-                      value={delivery.status}
-                      onValueChange={(value) => handleStatusUpdate(delivery.id, value)}
-                      disabled={updatingStatusId === delivery.id}
-                    >
-                      <SelectTrigger className="w-32">
-                        <SelectValue>
+                    <TableCell>
+                      <Select value={delivery.status} onValueChange={(newStatus) => handleStatusUpdate(delivery.id, newStatus)}>
+                        <SelectTrigger className="w-[140px]" disabled={updatingStatusId === delivery.id}>
                           <Badge
                             className={
-                              statusConfig[delivery.status as keyof typeof statusConfig]?.color || "bg-gray-500"
+                              delivery.status === "new"
+                                ? "bg-blue-100 text-blue-800"
+                                : delivery.status === "prepared"
+                                  ? "bg-yellow-100 text-yellow-800"
+                                  : delivery.status === "shipped"
+                                    ? "bg-purple-100 text-purple-800"
+                                    : delivery.status === "delivered"
+                                      ? "bg-green-100 text-green-800"
+                                      : delivery.status === "payment_received"
+                                        ? "bg-emerald-100 text-emerald-800"
+                                        : delivery.status === "returned"
+                                          ? "bg-orange-100 text-orange-800"
+                                          : delivery.status === "cancelled"
+                                            ? "bg-red-100 text-red-800"
+                                            : "bg-gray-100 text-gray-800"
                             }
                           >
-                            {statusConfig[delivery.status as keyof typeof statusConfig]?.label || delivery.status}
+                            {delivery.status
+                              .replace(/_/g, " ")
+                              .split(" ")
+                              .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                              .join(" ")}
                           </Badge>
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="new">New</SelectItem>
-                        <SelectItem value="prepared">Prepared</SelectItem>
-                        <SelectItem value="shipped">Shipped</SelectItem>
-                        <SelectItem value="delivered">Delivered</SelectItem>
-                        <SelectItem value="payment_received">Payment Received</SelectItem>
-                        <SelectItem value="returned">Returned</SelectItem>
-                        <SelectItem value="cancelled">Cancelled</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-sm">
-                    {new Date(delivery.created_at).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                    })}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => setUploadingInvoiceId(delivery.id)}
-                        title="Upload courier invoice to extract tracking and charges"
-                      >
-                        <Upload className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="sm" asChild>
-                        <Link href={`/delivery/${delivery.id}`}>
-                          <Eye className="h-4 w-4" />
-                        </Link>
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleDelete(delivery.id)}
-                        disabled={deletingId === delivery.id}
-                      >
-                        {deletingId === delivery.id ? (
-                          <span className="h-4 w-4 animate-spin">⏳</span>
-                        ) : (
-                          <Trash2 className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </div>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="new">New</SelectItem>
+                          <SelectItem value="prepared">Prepared</SelectItem>
+                          <SelectItem value="shipped">Shipped</SelectItem>
+                          <SelectItem value="delivered">Delivered</SelectItem>
+                          <SelectItem value="payment_received">Payment Received</SelectItem>
+                          <SelectItem value="returned">Returned</SelectItem>
+                          <SelectItem value="cancelled">Cancelled</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-sm">
+                      {new Date(delivery.created_at).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setUploadingInvoiceId(delivery.id)}
+                          title="Upload courier invoice to extract tracking and charges"
+                        >
+                          <Upload className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" size="sm" asChild>
+                          <Link href={`/delivery/${delivery.id}`}>
+                            <Eye className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDelete(delivery.id)}
+                          disabled={deletingId === delivery.id}
+                        >
+                          {deletingId === delivery.id ? (
+                            <span className="h-4 w-4 animate-spin">⏳</span>
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 )
