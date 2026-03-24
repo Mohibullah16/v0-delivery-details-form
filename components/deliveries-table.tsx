@@ -324,10 +324,31 @@ export function DeliveriesTable({ deliveries }: { deliveries: Delivery[] }) {
                     <TableCell>
                       <Select value={delivery.status} onValueChange={(newStatus) => handleStatusUpdate(delivery.id, newStatus)}>
                         <SelectTrigger className="w-[140px]" disabled={updatingStatusId === delivery.id}>
-                          <SelectValue
-                            defaultValue={delivery.status}
-                            placeholder="Select status"
-                          />
+                          <Badge
+                            className={
+                              delivery.status === "new"
+                                ? "bg-blue-100 text-blue-800"
+                                : delivery.status === "prepared"
+                                  ? "bg-yellow-100 text-yellow-800"
+                                  : delivery.status === "shipped"
+                                    ? "bg-purple-100 text-purple-800"
+                                    : delivery.status === "delivered"
+                                      ? "bg-green-100 text-green-800"
+                                      : delivery.status === "payment_received"
+                                        ? "bg-emerald-100 text-emerald-800"
+                                        : delivery.status === "returned"
+                                          ? "bg-orange-100 text-orange-800"
+                                          : delivery.status === "cancelled"
+                                            ? "bg-red-100 text-red-800"
+                                            : "bg-gray-100 text-gray-800"
+                            }
+                          >
+                            {delivery.status
+                              .replace(/_/g, " ")
+                              .split(" ")
+                              .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                              .join(" ")}
+                          </Badge>
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="new">New</SelectItem>
