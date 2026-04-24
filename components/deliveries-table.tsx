@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useMemo } from "react"
 import { deleteDelivery, updateDeliveryStatus, updateTrackingNumber, updateItems, updateDelivery } from "@/app/actions"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -48,7 +48,40 @@ export function DeliveriesTable({ deliveries }: { deliveries: Delivery[] }) {
   const [editValue, setEditValue] = useState<string>("")
   const [showFinancials, setShowFinancials] = useState(false)
   const [uploadingInvoiceId, setUploadingInvoiceId] = useState<string | null>(null)
+  const [selectedMonth, setSelectedMonth] = useState<string>("current")
   const router = useRouter()
+
+  const availableMonths = useMemo(() => {
+    const months = new Set<string>()
+    deliveries.forEach((d) => {
+      if (d.created_at) {
+        const date = new Date(d.created_at)
+        if (!isNaN(date.getTime())) {
+          months.add(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`)
+        }
+      }
+    })
+    return Array.from(months).sort((a, b) => b.localeCompare(a))
+  }, [deliveries])
+
+  const effectiveMonth = selectedMonth === "current" 
+    ? (availableMonths.length > 0 ? availableMonths[0] : "All") 
+    : selectedMonth
+
+  const filteredDeliveries = useMemo(() => {
+    if (effectiveMonth === "All") return deliveries
+    return deliveries.filter((d) => {
+      if (!d.created_at) return false
+      const date = new Date(d.created_at)
+      const monthStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
+      return monthStr === effectiveMonth
+    })
+  }, [deliveries, effectiveMonth])
+
+  const handleMonthChange = (val: string) => {
+    setSelectedMonth(val)
+    setSelectedIds([])
+  }
 
   const handleDelete = useCallback(async (id: string) => {
     if (!window.confirm("Are you sure you want to delete this delivery?")) return
@@ -154,12 +187,12 @@ export function DeliveriesTable({ deliveries }: { deliveries: Delivery[] }) {
   }, [editingCell, editValue])
 
   const toggleSelectAll = useCallback(() => {
-    if (selectedIds.length === deliveries.length) {
+    if (selectedIds.length === filteredDeliveries.length && filteredDeliveries.length > 0) {
       setSelectedIds([])
     } else {
-      setSelectedIds(deliveries.map((d) => d.id))
+      setSelectedIds(filteredDeliveries.map((d) => d.id))
     }
-  }, [selectedIds.length, deliveries.length])
+  }, [selectedIds.length, filteredDeliveries])
 
   const toggleSelection = useCallback((id: string) => {
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]))
@@ -219,7 +252,28 @@ export function DeliveriesTable({ deliveries }: { deliveries: Delivery[] }) {
       )}
 
       <div className="rounded-lg border bg-card overflow-x-auto">
-        <div className="flex justify-end p-3 border-b">
+        <div className="flex justify-between items-center p-3 border-b">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-muted-foreground">Month:</span>
+            <Select value={effectiveMonth} onValueChange={handleMonthChange}>
+              <SelectTrigger className="w-[180px] h-9">
+                <SelectValue placeholder="Select Month" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableMonths.map((month) => {
+                  const [year, monthNum] = month.split("-")
+                  const date = new Date(parseInt(year), parseInt(monthNum) - 1)
+                  const label = date.toLocaleDateString("en-US", { month: "long", year: "numeric" })
+                  return (
+                    <SelectItem key={month} value={month}>
+                      {label}
+                    </SelectItem>
+                  )
+                })}
+                <SelectItem value="All">All Months</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <Button variant="outline" size="sm" onClick={() => setShowFinancials(!showFinancials)}>
             <ChevronDown className={`mr-2 h-4 w-4 transition-transform ${showFinancials ? "rotate-180" : ""}`} />
             {showFinancials ? "Hide" : "Show"} Financials
@@ -230,7 +284,7 @@ export function DeliveriesTable({ deliveries }: { deliveries: Delivery[] }) {
             <TableRow>
               <TableHead className="w-12">
                 <Checkbox
-                  checked={selectedIds.length === deliveries.length && deliveries.length > 0}
+                  checked={selectedIds.length === filteredDeliveries.length && filteredDeliveries.length > 0}
                   onCheckedChange={toggleSelectAll}
                 />
               </TableHead>
@@ -249,14 +303,14 @@ export function DeliveriesTable({ deliveries }: { deliveries: Delivery[] }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {deliveries.length === 0 ? (
+            {filteredDeliveries.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={showFinancials ? 13 : 11} className="h-24 text-center text-muted-foreground">
-                  No deliveries found. Create your first delivery label!
+                  No deliveries found for the selected month.
                 </TableCell>
               </TableRow>
             ) : (
-              deliveries.map((delivery) => {
+              filteredDeliveries.map((delivery) => {
                 const receivingAmount = (delivery.cod_amount ? parseFloat(delivery.cod_amount) : 0) - (delivery.service_charges || 0)
                 const profit = receivingAmount - (delivery.product_cost || 0)
                 return (
