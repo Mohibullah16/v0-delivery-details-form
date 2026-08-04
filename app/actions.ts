@@ -328,7 +328,9 @@ Only return valid JSON, no other text.`,
           },
         ],
         temperature: 0.1,
-        max_tokens: 500,
+        max_tokens: 1024,
+        reasoning_effort: "none",
+        reasoning_format: "hidden",
       }),
     })
 
@@ -418,7 +420,9 @@ Return ONLY valid JSON in this exact format, no other text:
           },
         ],
         temperature: 0.1,
-        max_tokens: 500,
+        max_tokens: 1024,
+        reasoning_effort: "none",
+        reasoning_format: "hidden",
       }),
     })
 
