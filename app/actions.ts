@@ -393,21 +393,20 @@ export async function extractInvoiceInfo(base64Image: string) {
             content: [
               {
                 type: "text",
-                text: `Please analyze this courier shipping invoice and extract the following information:
-- Tracking Number (CN or Consignment Number - this is the most important field)
-- Service Charges (extract the total service charges amount including all fees)
-- COD Amount (Cash on Delivery amount - the amount to be collected from customer)
+                text: `Please analyze this courier shipping invoice/label and extract the following three fields exactly as printed:
 
-Return the data in JSON format like this:
+1. Tracking Number: the main consignment/tracking number (CN) for this shipment. It is usually a large, bold number printed prominently near the receiver section or the courier's logo (for example a number like "263098063"). Do NOT use a number that is printed next to or below the word "BARCODE" or "Barcode No" — that is a different, unrelated barcode identifier, not the tracking number.
+
+2. Service Charges: the number printed on the line labeled exactly "Service Charge" or "Service Charges" — nothing else. Return that number exactly as printed. Do NOT add G.S.T, tax, insurance, handling fee, or any other line item to it. Do NOT subtract anything from it either. If there is no line labeled "Service Charge(s)", return null for this field.
+
+3. COD Amount: the Cash on Delivery amount to be collected from the customer, usually labeled "COD Amount". If that exact label is absent, use "Total Payment to Collect" instead.
+
+Return ONLY valid JSON in this exact format, no other text:
 {
   "trackingNumber": "extracted CN or consignment number or null",
-  "serviceCharges": "extracted service charges amount as number or null",
+  "serviceCharges": "extracted Service Charge line amount as number, unmodified, or null",
   "codAmount": "extracted COD amount as number or null"
-}
-
-For service charges, look for lines that say "Service Charge", "Handling Fee", "Delivery Charge", "Total Charges" etc.
-For COD amount, look for fields like "COD Amount", "Amount to Collect", "Total COD", "Payable Amount" etc.
-Only return valid JSON, no other text.`,
+}`,
               },
               {
                 type: "image_url",

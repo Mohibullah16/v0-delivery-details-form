@@ -221,6 +221,7 @@ export function DeliveriesTable({ deliveries }: { deliveries: Delivery[] }) {
             <div className="p-4">
               <InvoiceUpload
                 deliveryId={uploadingInvoiceId}
+                currentCodAmount={deliveries.find((d) => d.id === uploadingInvoiceId)?.cod_amount ?? null}
                 onDataExtracted={() => {
                   router.refresh()
                   setUploadingInvoiceId(null)

@@ -4,20 +4,51 @@ import type React from "react"
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Loader2, Upload, CheckCircle } from "lucide-react"
+import { Loader2, Upload, CheckCircle, AlertTriangle } from "lucide-react"
 import { extractInvoiceInfo, updateInvoiceData } from "@/app/actions"
+
+interface ExtractedInvoiceData {
+  trackingNumber?: string
+  serviceCharges?: number
+  codAmount?: number
+}
 
 interface InvoiceUploadProps {
   deliveryId: string
-  onDataExtracted?: (data: { trackingNumber?: string; serviceCharges?: number }) => void
+  currentCodAmount?: string | null
+  onDataExtracted?: (data: ExtractedInvoiceData) => void
 }
 
-export default function InvoiceUpload({ deliveryId, onDataExtracted }: InvoiceUploadProps) {
+const COD_MISMATCH_TOLERANCE = 1
+
+export default function InvoiceUpload({ deliveryId, currentCodAmount, onDataExtracted }: InvoiceUploadProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string>("")
   const [isDragging, setIsDragging] = useState(false)
   const [success, setSuccess] = useState(false)
-  const [extractedData, setExtractedData] = useState<{ trackingNumber?: string; serviceCharges?: number } | null>(null)
+  const [extractedData, setExtractedData] = useState<ExtractedInvoiceData | null>(null)
+  const [codMismatch, setCodMismatch] = useState<{ existing: number; extracted: number } | null>(null)
+  const [pendingData, setPendingData] = useState<ExtractedInvoiceData | null>(null)
+
+  const commitData = async (data: ExtractedInvoiceData, useCodAmount: boolean) => {
+    await updateInvoiceData(
+      deliveryId,
+      data.trackingNumber,
+      data.serviceCharges,
+      useCodAmount ? data.codAmount : undefined,
+    )
+
+    setSuccess(true)
+    setCodMismatch(null)
+    setPendingData(null)
+    onDataExtracted?.(data)
+
+    // Clear form after 2 seconds
+    setTimeout(() => {
+      setSuccess(false)
+      setExtractedData(null)
+    }, 2000)
+  }
 
   const handleImageUpload = async (file: File) => {
     if (!file.type.startsWith("image/")) {
@@ -28,6 +59,8 @@ export default function InvoiceUpload({ deliveryId, onDataExtracted }: InvoiceUp
     setIsLoading(true)
     setError("")
     setSuccess(false)
+    setCodMismatch(null)
+    setPendingData(null)
 
     try {
       const reader = new FileReader()
@@ -48,17 +81,22 @@ export default function InvoiceUpload({ deliveryId, onDataExtracted }: InvoiceUp
           const data = result.data
           setExtractedData(data)
 
-          // Auto-update the delivery with extracted data
-          await updateInvoiceData(deliveryId, data.trackingNumber, data.serviceCharges, data.codAmount)
+          const existingCod = currentCodAmount ? parseFloat(currentCodAmount) : null
+          const extractedCod = data.codAmount
 
-          setSuccess(true)
-          onDataExtracted?.(data)
-          
-          // Clear form after 2 seconds
-          setTimeout(() => {
-            setSuccess(false)
-            setExtractedData(null)
-          }, 2000)
+          if (
+            existingCod !== null &&
+            !isNaN(existingCod) &&
+            extractedCod !== undefined &&
+            Math.abs(existingCod - extractedCod) >= COD_MISMATCH_TOLERANCE
+          ) {
+            // Amounts disagree — let the user decide instead of silently overwriting.
+            setPendingData(data)
+            setCodMismatch({ existing: existingCod, extracted: extractedCod })
+            return
+          }
+
+          await commitData(data, true)
         } catch (err) {
           setError(err instanceof Error ? err.message : "Failed to extract data from invoice")
         } finally {
@@ -68,6 +106,18 @@ export default function InvoiceUpload({ deliveryId, onDataExtracted }: InvoiceUp
       reader.readAsDataURL(file)
     } catch (err) {
       setError("Failed to upload image")
+      setIsLoading(false)
+    }
+  }
+
+  const resolveCodMismatch = async (useExtracted: boolean) => {
+    if (!pendingData) return
+    setIsLoading(true)
+    try {
+      await commitData(pendingData, useExtracted)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update delivery")
+    } finally {
       setIsLoading(false)
     }
   }
@@ -98,7 +148,28 @@ export default function InvoiceUpload({ deliveryId, onDataExtracted }: InvoiceUp
         <CardDescription>Extract tracking number, COD amount, and service charges from courier invoice</CardDescription>
       </CardHeader>
       <CardContent>
-        {success ? (
+        {codMismatch ? (
+          <div className="rounded-lg p-6 bg-amber-50 border border-amber-200">
+            <div className="flex items-center gap-2 mb-3">
+              <AlertTriangle className="h-5 w-5 text-amber-600" />
+              <p className="text-amber-800 font-semibold">COD amount doesn't match</p>
+            </div>
+            <p className="text-sm text-amber-700 mb-1">
+              Current COD on file: <span className="font-semibold">Rs. {codMismatch.existing.toFixed(2)}</span>
+            </p>
+            <p className="text-sm text-amber-700 mb-4">
+              COD on invoice: <span className="font-semibold">Rs. {codMismatch.extracted.toFixed(2)}</span>
+            </p>
+            <div className="flex gap-2">
+              <Button size="sm" onClick={() => resolveCodMismatch(true)} disabled={isLoading}>
+                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Update to invoice amount"}
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => resolveCodMismatch(false)} disabled={isLoading}>
+                Ignore, keep current
+              </Button>
+            </div>
+          </div>
+        ) : success ? (
           <div className="rounded-lg p-6 bg-green-50 border border-green-200 text-center">
             <CheckCircle className="h-8 w-8 text-green-600 mx-auto mb-2" />
             <p className="text-green-700 font-semibold">Invoice processed successfully!</p>
