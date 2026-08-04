@@ -40,12 +40,17 @@ export default function InvoiceUpload({ deliveryId, onDataExtracted }: InvoiceUp
         }
 
         try {
-          const data = await extractInvoiceInfo(base64)
+          const result = await extractInvoiceInfo(base64)
+          if (!result.success) {
+            setError(result.error)
+            return
+          }
+          const data = result.data
           setExtractedData(data)
-          
+
           // Auto-update the delivery with extracted data
           await updateInvoiceData(deliveryId, data.trackingNumber, data.serviceCharges, data.codAmount)
-          
+
           setSuccess(true)
           onDataExtracted?.(data)
           

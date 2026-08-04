@@ -283,7 +283,8 @@ export async function extractDeliveryInfoFromImage(base64Image: string) {
   const apiKey = process.env.GROQ_API_KEY
 
   if (!apiKey) {
-    throw new Error("GROQ_API_KEY not configured")
+    console.error("[v0] GROQ_API_KEY not configured")
+    return { success: false as const, error: "OCR is not configured on the server (missing GROQ_API_KEY)" }
   }
 
   try {
@@ -352,14 +353,20 @@ Only return valid JSON, no other text.`,
     const extractedData = JSON.parse(jsonMatch[0])
 
     return {
-      name: capitalizeName(extractedData.name),
-      phone: normalizePhoneNumber(extractedData.phone),
-      address: extractedData.address || undefined,
-      city: extractedData.city || undefined,
+      success: true as const,
+      data: {
+        name: capitalizeName(extractedData.name),
+        phone: normalizePhoneNumber(extractedData.phone),
+        address: extractedData.address || undefined,
+        city: extractedData.city || undefined,
+      },
     }
   } catch (error) {
     console.error("[v0] OCR extraction error:", error)
-    throw new Error(error instanceof Error ? error.message : "Failed to extract information from image")
+    return {
+      success: false as const,
+      error: error instanceof Error ? error.message : "Failed to extract information from image",
+    }
   }
 }
 
@@ -367,7 +374,8 @@ export async function extractInvoiceInfo(base64Image: string) {
   const apiKey = process.env.GROQ_API_KEY
 
   if (!apiKey) {
-    throw new Error("GROQ_API_KEY not configured")
+    console.error("[v0] GROQ_API_KEY not configured")
+    return { success: false as const, error: "OCR is not configured on the server (missing GROQ_API_KEY)" }
   }
 
   try {
@@ -436,13 +444,19 @@ Only return valid JSON, no other text.`,
     const extractedData = JSON.parse(jsonMatch[0])
 
     return {
-      trackingNumber: extractedData.trackingNumber || undefined,
-      serviceCharges: extractedData.serviceCharges ? parseFloat(extractedData.serviceCharges) : undefined,
-      codAmount: extractedData.codAmount ? parseFloat(extractedData.codAmount) : undefined,
+      success: true as const,
+      data: {
+        trackingNumber: extractedData.trackingNumber || undefined,
+        serviceCharges: extractedData.serviceCharges ? parseFloat(extractedData.serviceCharges) : undefined,
+        codAmount: extractedData.codAmount ? parseFloat(extractedData.codAmount) : undefined,
+      },
     }
   } catch (error) {
     console.error("[v0] Invoice OCR extraction error:", error)
-    throw new Error(error instanceof Error ? error.message : "Failed to extract information from invoice")
+    return {
+      success: false as const,
+      error: error instanceof Error ? error.message : "Failed to extract information from invoice",
+    }
   }
 }
 

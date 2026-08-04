@@ -39,8 +39,12 @@ export default function OCRUpload({ onDataExtracted }: OCRUploadProps) {
         }
 
         try {
-          const extractedData = await extractDeliveryInfoFromImage(base64)
-          onDataExtracted(extractedData)
+          const result = await extractDeliveryInfoFromImage(base64)
+          if (!result.success) {
+            setError(result.error)
+          } else {
+            onDataExtracted(result.data)
+          }
         } catch (err) {
           setError(err instanceof Error ? err.message : "Failed to extract data from image")
         } finally {
