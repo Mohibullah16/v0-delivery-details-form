@@ -24,7 +24,7 @@ const SENDER_DETAILS = {
 
 export default function DeliveryForm() {
   const router = useRouter()
-  const supabase = createClient()
+  const [supabase, setSupabase] = useState<any>(null)
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [showPrint, setShowPrint] = useState(false)
@@ -42,6 +42,19 @@ export default function DeliveryForm() {
   })
 
   useEffect(() => {
+    // Initialize Supabase client only in useEffect (client-side)
+    try {
+      const client = createClient()
+      setSupabase(client)
+    } catch (error) {
+      console.error("[v0] Failed to initialize Supabase:", error)
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!supabase) return
+
     const checkAuth = async () => {
       const {
         data: { session },
@@ -63,7 +76,7 @@ export default function DeliveryForm() {
     }
 
     checkAuth()
-  }, [supabase.auth, router])
+  }, [supabase, router])
 
   const handleOCRDataExtracted = (data: {
     name?: string

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import React, { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
@@ -20,10 +20,22 @@ interface UserHeaderProps {
 
 export default function UserHeader({ email }: UserHeaderProps) {
   const router = useRouter()
-  const supabase = createClient()
+  const [supabase, setSupabase] = useState<any>(null)
   const [loading, setLoading] = useState(false)
 
+  // Initialize Supabase client once on mount
+  React.useEffect(() => {
+    try {
+      const client = createClient()
+      setSupabase(client)
+    } catch (error) {
+      console.error("[v0] Failed to initialize Supabase in UserHeader:", error)
+    }
+  }, [])
+
   const handleLogout = async () => {
+    if (!supabase) return
+    
     setLoading(true)
     try {
       await supabase.auth.signOut()

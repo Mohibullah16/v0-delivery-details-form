@@ -1,10 +1,10 @@
 import { getAllDeliveries } from "@/app/actions"
-import { DeliveriesTable } from "@/components/deliveries-table"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import UserHeader from "@/components/user-header"
+import { DeliveriesMonthlyView } from "@/components/deliveries-monthly-view"
 
 export default async function DeliveriesPage() {
   const supabase = await createClient()
@@ -44,7 +44,7 @@ export default async function DeliveriesPage() {
             <p>No deliveries found or unable to load deliveries. Please try again later.</p>
           </div>
         ) : (
-          <DeliveriesTable deliveries={deliveries} />
+          <DeliveriesMonthlyView deliveries={deliveries} />
         )}
       </div>
     </div>
